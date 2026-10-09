@@ -2612,9 +2612,11 @@ main:focus {
   transform: scale(1.03);
 }
 
-/* Hero layers: the square photo covers the tall stage, anchored to the top. */
-.tryon__layer {
-  overflow: hidden;
+/* Hero layers: the square photo fills the square stage. */
+/* Square stage, so the whole cut-out photo fits and no arms are cropped. */
+.tryon__model {
+  aspect-ratio: 1;
+  pointer-events: none;
 }
 
 .tryon__layer .garment {

@@ -48,8 +48,10 @@ export default function TryOnHero() {
       models.current.forEach((el, i) => {
         if (!el) return;
         if (i === k) {
+          // The photos are cut out, so the outgoing model must also be clipped
+          // at the scan line or it shows through the incoming one.
           el.style.opacity = '1';
-          el.style.clipPath = 'none';
+          el.style.clipPath = t > 0 ? `inset(0 ${t * 100}% 0 0)` : 'none';
           el.style.zIndex = '1';
         } else if (i === k + 1 && t > 0) {
           el.style.opacity = '1';
