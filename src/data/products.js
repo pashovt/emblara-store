@@ -1,260 +1,248 @@
-// Product range built from the WeavesOfHeaven catalogue research
-// (01-Market-Research/Supplier-WeavesOfHeaven/weavesofheaven_catalogue.csv).
-// Prices are DEMO prices for EMBLARA, not the partner's prices. Descriptions
-// are written from the product facts, not copied.
+// Website range, 9 Oct 2026. Source: 02-Listings/Gelato/00-Product-Index.csv and
+// 00-Option-Rules.csv, priced by src/lib/pricing.js (same model as
+// 05-Business-Plan/Pricing/Emblara-Pricing-Matrix.xlsx, website channel).
+//
+// - Launch is Gelato products only. Weaves of Heaven is possible later website
+//   supply, subject to a supplier agreement, so none of its products are here.
+// - Outerwear, vests, fleeces and jackets are deferred. Spa products are a
+//   separate range. Neither is in this store.
+// - Costs are Gelato ex VAT. `base` is the garment with one decoration location
+//   in the smallest size; `ship` is the first-item and additional-item delivery
+//   rate. A mixed order is delivered at the rate of its most expensive garment.
+// - `sizes` and `positions` hold cost deltas. Sizes and locations the sheet marks
+//   unavailable are left out.
+// All prices are planning figures, not final. Nothing is on sale.
+
+import { retailAdd, unitPrice } from '../lib/pricing.js';
 
 const C = {
   navy: { name: 'Navy', hex: '#1d2840' },
+  frenchNavy: { name: 'French Navy', hex: '#222c4d' },
   black: { name: 'Black', hex: '#121214' },
   white: { name: 'White', hex: '#f5f5f2' },
+  sportGrey: { name: 'Sport Grey', hex: '#9a9ea3' },
+  greyMelange: { name: 'Grey Melange', hex: '#8c8f93' },
+  pureGrey: { name: 'Pure Grey', hex: '#a9acaf' },
   royal: { name: 'Royal Blue', hex: '#2a4fb5' },
-  heather: { name: 'Heather Grey', hex: '#9a9ea3' },
-  charcoal: { name: 'Charcoal', hex: '#3b3d42' },
-  bottle: { name: 'Bottle Green', hex: '#1f4a36' },
-  burgundy: { name: 'Burgundy', hex: '#6b1f2e' },
-  red: { name: 'Red', hex: '#b3262e' },
-  sky: { name: 'Sky Blue', hex: '#8bb8e0' },
-  gold: { name: 'Gold', hex: '#d4a017' },
-  fuchsia: { name: 'Fuchsia', hex: '#c2286f' },
-  purple: { name: 'Purple', hex: '#5b2a86' },
-  pink: { name: 'Pink', hex: '#e0498f' },
-  ceil: { name: 'Ceil Blue', hex: '#8fb0d6' },
-  natural: { name: 'Natural', hex: '#e8e1d2' },
-  orange: { name: 'Orange', hex: '#e2671f' },
-  grey: { name: 'Grey', hex: '#7b7f86' },
-  sand: { name: 'Sand', hex: '#cdb894' },
 };
 
-const S = (from, to) => {
-  const all = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-  return all.slice(all.indexOf(from), all.indexOf(to) + 1);
-};
+const opt = (label, cost = 0) => ({ label, cost, add: cost ? retailAdd(cost) : 0 });
+const sizes = (list) => list.map(([label, cost]) => opt(label, cost));
 
-const chest = [{ label: 'Left chest', add: 0 }];
+const printPositions = (both) => [opt('Front'), opt('Back'), opt('Front + back', both)];
+const chestPositions = [opt('Left chest'), opt('Centre chest'), opt('Large chest')];
+const poloPositions = [opt('Left chest'), opt('Large back')];
+
+const shots = (...names) => names.map((n) => `/${n}.webp`);
 
 export const categories = [
   { id: 'all', label: 'All' },
   { id: 'polos', label: 'Polos' },
-  { id: 'tops', label: 'Tees & sweats' },
-  { id: 'layers', label: 'Jackets & layers' },
-  { id: 'uniforms', label: 'Sector uniforms' },
-  { id: 'textiles', label: 'Spa & hospitality' },
-  { id: 'headwear', label: 'Headwear' },
+  { id: 'tees', label: 'T-shirts' },
+  { id: 'sweats', label: 'Hoodies & sweatshirts' },
 ];
 
 export const products = [
   {
-    slug: 'pique-polo', name: 'Pique polo', category: 'polos', price: 14.99, method: 'Embroidered',
-    images: ['/products/polo-pique-navy-model.webp', '/products/polo-pique-navy-flat.webp'],
-    colours: [C.navy, C.black, C.white, C.royal, C.heather, C.bottle, C.burgundy, C.red, C.sky, C.gold],
-    sizes: S('S', '3XL'),
-    positions: [...chest, { label: 'Left chest + back print', add: 4 }],
-    fabric: '50% organic cotton / 50% polyester piqué', weight: '220 gsm',
-    blurb: 'The everyday staff polo. Breathable piqué that holds its shape through long shifts, with your logo stitched on the left chest.',
-    specs: ['Three-button placket, ribbed collar', 'Twin-needle sleeves and hem', 'Taped neck and shoulders', 'Regular fit'],
-    badge: 'Best seller', listings: ['4451403976', '4498172941'],
+    slug: 'mens-polo', name: 'Men’s polo', category: 'polos',
+    ship: { first: 3.42, extra: 0.97 },
+    previewColour: 'Black',
+    colours: [C.black, C.white, C.pureGrey, C.royal],
+    colourImages: {
+      Black: shots('products/perfect-men-black-model'),
+      White: shots('products/mens-polo-white-model'),
+      'Pure Grey': shots('products/mens-polo-pure-grey-model'),
+      'Royal Blue': shots('products/mens-polo-royal-blue-model'),
+    },
+    fabric: '100% combed ringspun cotton, 180 gsm',
+    blurb: 'A fitted cotton polo with your logo stitched on the left chest. A smart everyday shirt for staff and teams.',
+    specs: ['Men’s fitted cut', 'Embroidered logo, left chest or large back', 'Four colours', 'Sizes S to 3XL'],
+    badge: '100% cotton',
+    methods: [
+      {
+        id: 'embroidery', label: 'Embroidered', base: 12.89, digitised: true,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.65], ['3XL', 3.18]]),
+        positions: poloPositions,
+      },
+    ],
   },
   {
-    slug: 'classic-polo', name: 'Classic polo — extended sizes', category: 'polos', price: 15.99, method: 'Embroidered',
-    images: ['/products/polo-fotl-black-model.webp'],
-    colours: [C.black, C.navy, C.white, C.royal, C.charcoal, C.bottle, C.burgundy, C.red, C.orange, C.purple],
-    sizes: S('XS', '5XL'),
-    positions: chest,
-    fabric: 'Cotton / polyester piqué (branded garment)', weight: '220 gsm',
-    blurb: 'A named-brand polo in the widest colour and size range, up to 5XL. Good for teams that need every size covered.',
-    specs: ['18 colours available', 'Sizes XS to 5XL', 'Classic fit', 'Left-chest embroidery'],
-    listings: ['4486920572'],
+    slug: 'womens-polo', name: 'Women’s polo', category: 'polos',
+    ship: { first: 3.42, extra: 0.97 },
+    previewColour: 'French Navy',
+    colours: [C.frenchNavy, C.white, C.black],
+    colourImages: {
+      'French Navy': shots('products/polo-womens-navy-model'),
+      White: shots('products/womens-polo-white-model'),
+      Black: shots('products/womens-polo-black-model'),
+    },
+    fabric: '100% combed ringspun cotton, 180 gsm',
+    blurb: 'A shaped cotton polo for mixed teams, salons and front-of-house staff, with your logo embroidered on the left chest.',
+    specs: ['Women’s fitted cut', 'Embroidered logo, left chest or large back', 'Three colours', 'Sizes S to L'],
+    badge: '100% cotton',
+    methods: [
+      {
+        id: 'embroidery', label: 'Embroidered', base: 12.89, digitised: true,
+        sizes: sizes([['S'], ['M'], ['L']]),
+        positions: poloPositions,
+      },
+    ],
   },
   {
-    slug: 'womens-polo', name: 'Women’s fit polo', category: 'polos', price: 16.99, method: 'Embroidered',
-    images: ['/products/polo-womens-navy-model.webp'],
-    colours: [C.navy, C.black, C.white, C.royal, C.heather, C.bottle, C.burgundy, C.fuchsia, C.purple],
-    sizes: S('XS', '4XL'),
-    positions: chest,
-    fabric: '50% organic cotton / 50% polyester piqué', weight: '220 gsm',
-    blurb: 'A shaped, modern fit for mixed teams, salons and front-of-house staff, in the same fabric as our core polo.',
-    specs: ['Feminine fit', 'Two-button placket', 'Self-taped neck', 'Twin-needle stitching'],
-    listings: ['4486381436'],
+    slug: 'organic-polo', name: 'Organic cotton polo', category: 'polos',
+    ship: { first: 3.42, extra: 0.97 },
+    previewColour: 'Black',
+    colours: [C.black, C.white],
+    colourImages: {
+      Black: shots('products/organic-black-model'),
+      White: shots('products/organic-white-model'),
+    },
+    fabric: '100% organically grown cotton',
+    blurb: 'A polo in organically grown cotton, embroidered with your logo. For teams that want a lower-impact fabric.',
+    specs: ['Men’s cut', 'Embroidered logo, left chest or large back', 'Two colours', 'Sizes S to 3XL'],
+    badge: 'Organic cotton',
+    methods: [
+      {
+        id: 'embroidery', label: 'Embroidered', base: 14.82, digitised: true,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.65], ['3XL', 3.18]]),
+        positions: poloPositions,
+      },
+    ],
   },
   {
-    slug: 'long-sleeve-polo', name: 'Long-sleeve polo', category: 'polos', price: 21.99, method: 'Embroidered',
-    images: [],
-    colours: [C.navy, C.black, C.white, C.royal, C.charcoal, C.bottle],
-    sizes: S('S', '4XL'),
-    positions: chest,
-    fabric: '50% organic cotton / 50% polyester piqué', weight: '220 gsm',
-    blurb: 'The staff polo for colder shifts and outdoor work, with long sleeves and ribbed cuffs.',
-    specs: ['Long sleeves, ribbed cuffs', 'Button placket', 'Regular fit', 'Left-chest embroidery'],
-    listings: ['4488039344'],
+    slug: 'printed-polo', name: 'Printed polo', category: 'polos',
+    ship: { first: 3.42, extra: 0.97 },
+    previewColour: 'Navy',
+    colours: [C.navy, C.black, C.white, C.greyMelange],
+    colourImages: {
+      Navy: shots('products/polo-pique-navy-model', 'products/polo-pique-navy-flat'),
+      Black: shots('products/polo-fotl-black-model'),
+      White: shots('products/spring-white-model'),
+      'Grey Melange': shots('products/spring-grey-melange-model'),
+    },
+    fabric: '100% ringspun cotton piqué, 210 gsm',
+    fabricByColour: { 'Grey Melange': '85% cotton / 15% viscose piqué, 210 gsm' },
+    blurb: 'A cotton piqué polo with a full-colour print. Put the logo on the front, the back, or both.',
+    specs: ['Men’s cut', 'Full-colour transfer print', 'Front, back or front + back', 'Sizes S to 5XL'],
+    methods: [
+      {
+        id: 'print', label: 'Printed', base: 13.0,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL'], ['3XL', 4], ['4XL', 6], ['5XL', 8]]),
+        positions: printPositions(4.66),
+      },
+    ],
   },
   {
-    slug: 'printed-polo', name: 'Front & back printed polo', category: 'polos', price: 22.99, method: 'Printed',
-    images: ['/products/polo-printed-front-model.webp', '/products/polo-printed-back-model.webp'],
-    colours: [C.pink, C.navy, C.black, C.white, C.royal, C.red],
-    sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'],
-    positions: [{ label: 'Front chest', add: 0 }, { label: 'Full back', add: 0 }, { label: 'Front + back', add: 3 }],
-    fabric: '50% organic cotton / 50% polyester piqué', weight: '220 gsm',
-    blurb: 'Big, readable branding for events, security and teams people need to find. Print on the front, the back, or both.',
-    specs: ['Full-colour print', 'Sizes up to 8XL', 'Structured collar', 'Taped neck and shoulders'],
-    listings: ['4486934317'],
+    slug: 'heavy-cotton-tee', name: 'Heavy cotton tee', category: 'tees',
+    ship: { first: 3.19, extra: 0.95 },
+    previewColour: 'Navy',
+    colours: [C.navy, C.sportGrey, C.white, C.black],
+    colourImages: {
+      Navy: shots('tryon/tee-navy-model', 'tryon/tee-navy-flat'),
+      'Sport Grey': shots('tryon/tee-sport-grey-model', 'tryon/tee-sport-grey-flat'),
+      White: shots('tryon/tee-white-model', 'tryon/tee-white-flat'),
+      Black: shots('tryon/tee-black-model', 'tryon/tee-black-flat'),
+    },
+    fabric: '100% cotton (preshrunk jersey knit)',
+    fabricByColour: { 'Sport Grey': '90% cotton / 10% polyester' },
+    blurb: 'A sturdy unisex crew-neck tee. Print it for the lowest price, or have the logo embroidered for a finish that lasts.',
+    specs: ['Unisex fit', 'Printed or embroidered', 'Sizes S to 5XL printed, S to 3XL embroidered', 'Four colours'],
+    methods: [
+      {
+        id: 'print', label: 'Printed', base: 7.29,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.7], ['3XL', 3.3], ['4XL', 9], ['5XL', 11.2]]),
+        positions: printPositions(4.6),
+      },
+      {
+        id: 'embroidery', label: 'Embroidered', base: 11.29, digitised: true,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.6], ['3XL', 3.2]]),
+        positions: chestPositions,
+      },
+    ],
   },
   {
-    slug: 'rugby-shirt', name: 'Rugby shirt', category: 'polos', price: 27.99, method: 'Printed',
-    images: [],
-    colours: [{ name: 'Navy / White', hex: '#1d2840' }, { name: 'Black / White', hex: '#121214' }, { name: 'Green / White', hex: '#2e8b3e' }, C.white],
-    sizes: S('XS', '5XL'),
-    positions: chest,
-    fabric: '100% cotton single jersey', weight: '270 gsm',
-    blurb: 'A heavyweight long-sleeve rugby shirt for clubs and teamwear, with a woven collar and your logo on the chest.',
-    specs: ['Woven rugby collar', 'Reinforced cuffs', 'Side vents', 'Dyed-to-match buttons'],
-    listings: ['4490641286'],
+    slug: 'ultra-cotton-tee', name: 'Ultra cotton tee', category: 'tees',
+    ship: { first: 2.8, extra: 0.79 },
+    previewColour: 'Sport Grey',
+    colours: [C.sportGrey, C.white, C.navy, C.black],
+    colourImages: { 'Sport Grey': shots('products/tee-sport-grey-couple') },
+    fabric: '100% cotton',
+    fabricByColour: { 'Sport Grey': '90% cotton / 10% polyester' },
+    blurb: 'A smoother, heavier unisex tee with a printed logo on the front, the back, or both.',
+    specs: ['Unisex fit', 'Printed', 'Front, back or front + back', 'Sizes S to 5XL'],
+    methods: [
+      {
+        id: 'print', label: 'Printed', base: 10.91,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.96], ['3XL', 3.77], ['4XL', 5.57], ['5XL', 7.37]]),
+        positions: printPositions(5.04),
+      },
+    ],
   },
   {
-    slug: 'embroidered-tee', name: 'Embroidered organic tee', category: 'tops', price: 13.99, method: 'Embroidered',
-    images: ['/products/tee-black-model.webp'],
-    colours: [C.black, C.navy, C.royal, C.heather, C.charcoal, C.red, C.purple, C.fuchsia],
-    sizes: S('S', '3XL'),
-    positions: chest,
-    fabric: '100% organic cotton', weight: '160 gsm',
-    blurb: 'A soft, light tee with a neat stitched logo. Made for cafés, hospitality and event staff.',
-    specs: ['Crew neck', 'Regular fit', 'Lightweight for warm shifts', 'Left-chest embroidery'],
-    listings: ['4548044599'],
+    slug: 'logo-hoodie', name: 'Logo hoodie', category: 'sweats',
+    ship: { first: 4.39, extra: 1.19 },
+    previewColour: 'Navy',
+    colours: [C.navy, C.black, C.white, C.sportGrey],
+    colourImages: {
+      Navy: shots('tryon/hoodie-navy-model', 'tryon/hoodie-navy-flat'),
+      Black: shots('tryon/hoodie-black-model', 'tryon/hoodie-black-flat'),
+      White: shots('products/hoodie-white-front', 'products/hoodie-white-back'),
+      'Sport Grey': shots('tryon/hoodie-sport-grey-model', 'tryon/hoodie-sport-grey-flat'),
+    },
+    fabric: '50% cotton / 50% polyester',
+    blurb: 'A pullover hoodie for site teams, gyms and crews. Print the front, the back, or both, or embroider the chest.',
+    specs: ['Unisex fit', 'Printed or embroidered', 'Sizes S to 5XL printed, S to 3XL embroidered', 'Four colours'],
+    methods: [
+      {
+        id: 'print', label: 'Printed', base: 17.18,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.7], ['3XL', 3.27], ['4XL', 8.14], ['5XL', 9.94]]),
+        positions: printPositions(4.93),
+      },
+      {
+        id: 'embroidery', label: 'Embroidered', base: 19.0, digitised: true,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.7], ['3XL', 3.27]]),
+        positions: chestPositions,
+      },
+    ],
   },
   {
-    slug: 'logo-hoodie', name: 'Logo hoodie', category: 'tops', price: 24.99, method: 'Embroidered or printed',
-    images: ['/products/hoodie-navy-model.webp'],
-    colours: [C.navy, C.black, C.heather, C.charcoal, C.bottle, C.burgundy, C.royal, C.white],
-    sizes: S('XS', '3XL'),
-    positions: [{ label: 'Front', add: 0 }, { label: 'Back', add: 2 }, { label: 'Front + back', add: 4 }, { label: 'Front, back + sleeve', add: 7 }],
-    fabric: '50% organic cotton / 50% polyester', weight: '280 gsm',
-    blurb: 'A warm pullover hoodie for site teams, gyms and crews. Brand the front, the back, or go all-in with a sleeve.',
-    specs: ['Kangaroo pocket', 'Lined hood with drawcord', 'Ribbed cuffs and hem', 'Large colour range'],
-    listings: ['4449903299'],
-  },
-  {
-    slug: 'crew-sweatshirt', name: 'Crew sweatshirt', category: 'tops', price: 22.99, method: 'Printed',
-    images: ['/products/sweatshirt-navy-model.webp'],
-    colours: [C.navy, C.black, C.heather, C.charcoal, C.bottle],
-    sizes: S('S', '2XL'),
-    positions: [{ label: 'Front chest', add: 0 }, { label: 'Front full', add: 0 }, { label: 'Back', add: 0 }, { label: 'Chest + back', add: 1 }, { label: 'Front + back full', add: 2 }],
-    fabric: '80% organic cotton / 20% polyester', weight: '280 gsm',
-    blurb: 'A smart-casual crew neck for offices and winter uniforms, soft inside and easy to layer.',
-    specs: ['Ribbed neck, cuffs and hem', 'Regular fit', 'Smooth inner face', 'Five print positions'],
-    listings: ['4481278519'],
-  },
-  {
-    slug: 'zip-fleece', name: 'Zip fleece', category: 'layers', price: 27.99, method: 'Embroidered',
-    images: ['/products/fleece-mens-navy-model.webp', '/products/fleece-womens-model.webp'],
-    colours: [C.navy, C.black, C.grey, C.bottle, C.burgundy, C.royal, C.red, C.natural, C.white],
-    sizes: S('XS', '3XL'),
-    positions: chest,
-    fabric: '100% polyester anti-pill fleece', weight: '330 gsm',
-    blurb: 'Warm without the bulk. A full-zip fleece for delivery, security, trades and clinic teams.',
-    specs: ['Full-length zip', 'Two zipped pockets', 'Elasticated cuffs', 'Anti-pill finish'],
-    badge: 'Trades favourite', listings: ['4477463414', '4479090182', '4479086826'],
-  },
-  {
-    slug: 'bodywarmer', name: 'Padded bodywarmer', category: 'layers', price: 36.99, method: 'Embroidered',
-    images: ['/products/bodywarmer-black-model.webp'],
-    colours: [C.navy, C.black, C.bottle, C.grey, C.red],
-    sizes: S('XS', '3XL'),
-    positions: chest,
-    fabric: 'Coated polyester shell, polyfill wadding', weight: '386 gsm',
-    blurb: 'A water-resistant, windproof gilet that keeps the core warm and the arms free. Built for outdoor and site work.',
-    specs: ['Water-resistant and windproof', 'Insulated padding', 'Full zip with storm flap', 'Left-chest embroidery'],
-    listings: ['4490637258'],
-  },
-  {
-    slug: 'waterproof-parka', name: 'Waterproof parka', category: 'layers', price: 39.99, method: 'Embroidered',
-    images: ['/products/parka-black-front.webp', '/products/parka-black-back.webp'],
-    colours: [C.black, C.navy],
-    sizes: S('XS', '3XL'),
-    positions: [{ label: 'Front', add: 0 }, { label: 'Back', add: 0 }, { label: 'Front + back', add: 3 }],
-    fabric: 'Waterproof shell, 6000 mm rating, taped seams', weight: 'Quilted lining',
-    blurb: 'Proper winter protection for outdoor crews: waterproof, windproof and long enough to keep the weather out.',
-    specs: ['6000 mm waterproof rating', 'Fully taped seams', 'Concealed hood in collar', 'Heavy-duty front zip'],
-    listings: ['4494505222'],
-  },
-  {
-    slug: 'salon-tunic', name: 'Beauty & salon tunic', category: 'uniforms', price: 27.99, method: 'Embroidered',
-    images: [],
-    colours: [C.navy, C.black, { name: 'Dark Grey', hex: '#4a4c52' }, C.pink, C.purple, C.red],
-    sizes: S('XXS', '5XL'),
-    positions: [{ label: 'Top right chest', add: 0 }, { label: 'Bottom hem', add: 0 }, { label: 'Sleeve', add: 0 }, { label: 'Chest + hem', add: 2 }, { label: 'Chest, hem + sleeve', add: 4 }],
-    styles: ['Blossom (asymmetric)', 'Orchid (mandarin collar)'],
-    fabric: '100% polyester plain weave', weight: '185 gsm',
-    blurb: 'A clean, tailored tunic for salons, spas, nail and lash studios and aesthetic clinics, with your name or logo stitched where you want it.',
-    specs: ['Mandarin collar', 'Asymmetric button front', 'Back pleat for movement', 'Easy-care fabric'],
-    badge: 'Sector pick', listings: ['4502082536', '4502053868'],
-  },
-  {
-    slug: 'clinical-tunic', name: 'Stretch clinical tunic', category: 'uniforms', price: 24.99, method: 'Embroidered',
-    images: [],
-    colours: [C.navy, C.black, C.ceil, { name: 'Clean Green', hex: '#4f9d7a' }, { name: 'Dynamo Grey', hex: '#6d7178' }, C.white],
-    sizes: S('S', '4XL'),
-    positions: [{ label: 'Chest pocket', add: 0 }],
-    fabric: 'Four-way stretch polyester blend', weight: '210 gsm',
-    blurb: 'A breathable four-way stretch tunic for dental, clinic and care teams, with your name or logo on the chest pocket.',
-    specs: ['Four-way stretch', 'Moisture-wicking', 'Chest pocket', 'Name or logo embroidery'],
-    listings: ['4490632184'],
-  },
-  {
-    slug: 'logo-towels', name: 'Logo towels', category: 'textiles', price: 8.99, method: 'Embroidered',
-    images: [],
-    colours: [C.white, C.black, C.navy, { name: 'Dark Grey', hex: '#4a4c52' }, C.royal],
-    sizes: ['Face 30×30', 'Hand 50×89', 'Bath 70×128', 'Bath sheet 100×150'],
-    sizePrices: { 'Face 30×30': 8.99, 'Hand 50×89': 12.99, 'Bath 70×128': 16.99, 'Bath sheet 100×150': 24.99 },
-    positions: [{ label: 'Above the border', add: 0 }],
-    fabric: 'Organic cotton terry', weight: '500 gsm',
-    blurb: 'Soft, absorbent towels with your logo above the border. For salons, gyms, treatment rooms and holiday lets.',
-    specs: ['Four sizes', 'Highly absorbent terry', 'Logo or name embroidery', 'Hotel weight'],
-    listings: ['4442824978'],
-  },
-  {
-    slug: 'terry-robe', name: 'Terry robe', category: 'textiles', price: 34.99, method: 'Embroidered',
-    images: [],
-    colours: [C.white, C.black, C.charcoal, C.navy],
-    sizes: ['S–M', 'L–XL'],
-    positions: [{ label: 'Left chest', add: 0 }, { label: 'Back', add: 0 }, { label: 'Chest + back', add: 4 }],
-    styles: ['Hooded', 'Shawl collar'],
-    fabric: '100% organic cotton terry', weight: '450 gsm',
-    blurb: 'A plush, spa-weight robe for hotels, spas and treatment rooms, embroidered with your logo.',
-    specs: ['Hotel-weight terry', 'Hooded or shawl collar', 'Unisex fit', 'Tie belt and pockets'],
-    listings: ['4528846135', '4405623536'],
-  },
-  {
-    slug: 'waffle-robe', name: 'Waffle robe', category: 'textiles', price: 29.99, method: 'Embroidered',
-    images: [],
-    colours: [C.white, C.black, C.charcoal, C.navy, C.fuchsia],
-    sizes: ['S–M', 'L–XL'],
-    positions: [{ label: 'Left chest', add: 0 }, { label: 'Back', add: 0 }, { label: 'Chest + back', add: 4 }],
-    fabric: '100% organic cotton waffle', weight: '280 gsm',
-    blurb: 'A light, quick-drying waffle robe for spas, salons and treatment rooms, all year round.',
-    specs: ['Lightweight waffle weave', 'Shawl collar', 'Unisex fit', 'Logo or name embroidery'],
-    listings: ['4521272392'],
-  },
-  {
-    slug: 'logo-cap', name: 'Embroidered cap', category: 'headwear', price: 16.99, method: 'Embroidered',
-    images: ['/products/cap-black-flat.webp'],
-    colours: [C.black, C.navy, C.sand, C.grey, C.red, C.bottle],
-    sizes: ['One size'],
-    positions: [{ label: 'Front panel', add: 0 }],
-    fabric: '100% organic cotton twill', weight: 'Adjustable strap',
-    blurb: 'A low-profile cotton cap that finishes the uniform, with your logo stitched on the front panel.',
-    specs: ['Curved peak', 'Adjustable strap', 'Six panels', 'Front embroidery'],
-    listings: ['4481268708'],
-  },
-  {
-    slug: 'leavers-hoodie', name: 'School & club hoodie', category: 'tops', price: 26.99, method: 'Printed',
-    images: ['/products/hoodie-youth-front.webp', '/products/hoodie-youth-back.webp'],
-    colours: [C.white, C.navy, C.black, C.royal, C.red],
-    sizes: ['5–6 yrs', '7–8 yrs', '9–11 yrs', '12–13 yrs', 'S', 'M', 'L', 'XL', '2XL', '3XL'],
-    positions: [{ label: 'Front logo + back names', add: 0 }],
-    fabric: 'Cotton / polyester fleece', weight: 'Midweight',
-    blurb: 'Youth and adult sizes for school leavers, clubs and squads: logo on the front, names or numbers on the back.',
-    specs: ['Youth and adult sizes', 'Names list on the back', 'Kangaroo pocket', 'Lined hood'],
-    listings: ['4459926994'],
+    slug: 'crew-sweatshirt', name: 'Crew sweatshirt', category: 'sweats',
+    ship: { first: 3.99, extra: 0.99 },
+    previewColour: 'Navy',
+    colours: [C.navy, C.sportGrey, C.white, C.black],
+    colourImages: {
+      Navy: shots('tryon/sweat-navy-model', 'tryon/sweat-navy-flat'),
+      'Sport Grey': shots('tryon/sweat-sport-grey-model', 'tryon/sweat-sport-grey-flat'),
+      White: shots('products/sweat-white-front', 'products/sweat-white-back'),
+      Black: shots('tryon/sweat-black-model', 'tryon/sweat-black-flat'),
+    },
+    fabric: '50% cotton / 50% polyester',
+    blurb: 'A smart-casual crew neck for offices and winter uniforms. Print it, or have the logo embroidered on the chest.',
+    specs: ['Unisex fit', 'Printed or embroidered', 'Sizes S to 5XL printed, S to 3XL embroidered', 'Four colours'],
+    methods: [
+      {
+        id: 'print', label: 'Printed', base: 14.72,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.7], ['3XL', 3.27], ['4XL', 7.77], ['5XL', 9.58]]),
+        positions: printPositions(4.93),
+      },
+      {
+        id: 'embroidery', label: 'Embroidered', base: 18.54, digitised: true,
+        sizes: sizes([['S'], ['M'], ['L'], ['XL'], ['2XL', 1.7], ['3XL', 3.27]]),
+        positions: chestPositions,
+      },
+    ],
   },
 ];
 
+products.forEach((p) => {
+  // Default shots are the preview colour's.
+  p.images = p.colourImages[p.previewColour] ?? [];
+  p.method = p.methods.map((m) => m.label).join(' or ');
+  // Lowest price for one piece, for "from £x" labels.
+  p.price = Math.min(...p.methods.map((m) => unitPrice(p, { method: m.id, qty: 1 })));
+});
+
 export const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
+
+// Photos for a colour; falls back to the product's default shots.
+export const imagesFor = (product, colour) => product.colourImages?.[colour] ?? product.images;

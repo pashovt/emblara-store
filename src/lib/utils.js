@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { tiers } from '../data/site.js';
+import { breaks } from '../data/site.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -13,14 +13,10 @@ export const motionOK = () =>
   typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- pricing ----------
-export const basePrice = (product, size) => product.sizePrices?.[size] ?? product.price;
+// Index of the price break a quantity falls in (0 = 1 piece … 5 = 50+).
+export const breakIndex = (qty) => breaks.reduce((hit, b, i) => (qty >= b.min ? i : hit), 0);
 
-export const positionAdd = (product, label) =>
-  product.positions.find((p) => p.label === label)?.add ?? 0;
-
-export const unitPrice = (product, { size, position }) => basePrice(product, size) + positionAdd(product, position);
-
-export const tierFor = (qty) => [...tiers].reverse().find((t) => qty >= t.min) ?? tiers[0];
+// Pricing itself lives in pricing.js (order-level, most expensive item sets delivery).
 
 // ---------- hash router ----------
 // Routes: #/ (home), #/shop, #/shop/<category>, #/product/<slug>, #/checkout,

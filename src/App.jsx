@@ -8,7 +8,7 @@ import Checkout from './pages/Checkout.jsx';
 import { scrollToId, scrollToY, useRoute, useSmoothScroll } from './lib/utils.js';
 
 const titles = {
-  home: 'EMBLARA — Branded Workwear Store (Demo)',
+  home: 'EMBLARA — Branded Clothing Store (Demo)',
   shop: 'Shop — EMBLARA (Demo)',
   checkout: 'Checkout — EMBLARA (Demo)',
 };

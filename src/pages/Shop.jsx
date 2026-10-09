@@ -19,7 +19,7 @@ export default function Shop({ category = 'all' }) {
           )}
         </h1>
         <p className="shop-hero__sub">
-          Every price includes your logo in the standard position and a digital proof. Team discounts start at 10 pieces of the same item, mixed sizes and colours.
+          Every price includes delivery, your logo in the position you choose and a digital proof. The price per piece drops as your order grows, at 2, 5, 10, 25 and 50 pieces, mixed sizes and colours.
         </p>
       </section>
 

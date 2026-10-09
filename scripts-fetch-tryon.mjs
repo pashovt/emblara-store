@@ -2,7 +2,8 @@
 import { writeFile } from 'node:fs/promises';
 const B = 'https://s3.eu-west-1.amazonaws.com/gelato-api-live/preflight/preview/';
 const P = { tee: 't-shirt.crewneck.unisex.heavy-weight.gildan.5000', hoodie: 'hoodie.pullover.unisex.classic.gildan.18500', sweat: 'sweatshirt.crewneck.unisex.classic.gildan.18000' };
-const looks = [['tee', 'navy'], ['tee', 'maroon'], ['tee', 'sport-grey'], ['hoodie', 'black'], ['hoodie', 'forest-green'], ['hoodie', 'navy'], ['sweat', 'sand'], ['sweat', 'sport-grey'], ['sweat', 'navy']];
+// Every colour the range sells: Navy, Sport Grey, Black and White.
+const looks = ['tee', 'hoodie', 'sweat'].flatMap((g) => ['navy', 'sport-grey', 'black', 'white'].map((c) => [g, c]));
 const rows = ['file,source_url'];
 for (const [g, c] of looks) {
   for (const [kind, path] of [['model', `premium/model/male/man2/front`], ['flat', `editor/front`]]) {

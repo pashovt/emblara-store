@@ -1799,6 +1799,24 @@ main:focus {
   color: var(--copper-lit);
 }
 
+/* Six price breaks: two rows of three on phones. */
+@media (max-width: 560px) {
+  .tiers,
+  .tiers tbody {
+    display: block;
+  }
+
+  .tiers caption {
+    display: block;
+  }
+
+  .tiers tr {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+}
+
 .acc {
   margin-top: 0.5rem;
   border-top: 1px solid var(--line);

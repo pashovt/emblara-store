@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { nav, site, freeDeliveryOver } from '../data/site.js';
+import { imagesFor } from '../data/products.js';
+import { nav, site } from '../data/site.js';
 import { useCart } from '../store/cart.jsx';
 import { gbp, setScrollLock } from '../lib/utils.js';
 import { Mark, ProductImage } from './ui.jsx';
@@ -89,7 +90,6 @@ function BagIcon() {
 export function CartDrawer() {
   const { open, setOpen, totals, setQty, remove } = useCart();
   const panel = useRef(null);
-  const toFree = Math.max(0, freeDeliveryOver - totals.subtotal);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -135,19 +135,17 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            <p className="drawer__free">
-              {toFree > 0 ? `${gbp(toFree)} away from free standard delivery` : 'Free standard delivery unlocked'}
-            </p>
+            <p className="drawer__free">Tracked UK delivery is included in every price</p>
             <ul className="drawer__lines">
               {totals.lines.map((l) => (
                 <li key={l.id} className="line">
                   <a className="line__img" href={`#/product/${l.slug}`} onClick={() => setOpen(false)}>
-                    <ProductImage product={l.product} />
+                    <ProductImage product={l.product} src={imagesFor(l.product, l.colour)[0]} />
                   </a>
                   <div className="line__info">
                     <p className="line__name">{l.product.name}</p>
                     <p className="line__meta">
-                      {[l.colour, l.size, l.style, l.position].filter(Boolean).join(' · ')}
+                      {[l.methodLabel, l.colour, l.size, l.position].filter(Boolean).join(' · ')}
                     </p>
                     {l.logoName && <p className="line__meta">Logo: {l.logoName}</p>}
                     <div className="line__row">
@@ -158,7 +156,7 @@ export function CartDrawer() {
                       </div>
                       <span className="line__total">{gbp(l.total)}</span>
                     </div>
-                    {l.tier.off > 0 && <p className="line__tier">{Math.round(l.tier.off * 100)}% team discount applied</p>}
+                    <p className="line__tier">{gbp(l.unit)} each at this order size</p>
                     <button type="button" className="line__remove" onClick={() => remove(l.id)}>
                       Remove
                     </button>
@@ -167,17 +165,11 @@ export function CartDrawer() {
               ))}
             </ul>
             <div className="drawer__foot">
-              {totals.savings > 0 && (
-                <p className="sum-row">
-                  <span>Team discount</span>
-                  <span>−{gbp(totals.savings)}</span>
-                </p>
-              )}
               <p className="sum-row sum-row--big">
                 <span>Subtotal</span>
                 <span>{gbp(totals.subtotal)}</span>
               </p>
-              <p className="drawer__note">Delivery calculated at checkout. Proof sent before production.</p>
+              <p className="drawer__note">Delivery is included. Proof sent before production.</p>
               <a className="pill pill--copper pill--block" href="#/checkout" onClick={() => setOpen(false)}>
                 Checkout
               </a>
@@ -196,16 +188,13 @@ export function Footer() {
       <div className="footer__top">
         <div>
           <p className="footer__tag">{site.tagline}</p>
-          <p className="footer__partner">
-            {site.partner.name ? `Made in collaboration with ${site.partner.name}. ` : ''}
-            {site.partner.line}
-          </p>
+          <p className="footer__partner">{site.line}</p>
         </div>
         <nav className="footer__nav" aria-label="Footer">
           <a href="#/shop">Shop all</a>
           <a href="#/shop/polos">Polos</a>
-          <a href="#/shop/layers">Jackets & layers</a>
-          <a href="#/shop/uniforms">Sector uniforms</a>
+          <a href="#/shop/tees">T-shirts</a>
+          <a href="#/shop/sweats">Hoodies & sweatshirts</a>
           <a href="#/process">How it works</a>
           <a href="#/checkout">Checkout</a>
         </nav>

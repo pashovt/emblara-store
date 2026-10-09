@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { delivery, freeDeliveryOver } from '../data/site.js';
+import { imagesFor } from '../data/products.js';
+import { deliveryNote } from '../data/site.js';
 import { totalsFor, useCart } from '../store/cart.jsx';
 import { gbp, scrollToY } from '../lib/utils.js';
 import { ProductImage } from '../components/ui.jsx';
@@ -29,10 +30,9 @@ export default function Checkout() {
   const { items, clear } = useCart();
   const [values, setValues] = useState(empty);
   const [errors, setErrors] = useState({});
-  const [method, setMethod] = useState('standard');
   const [artwork, setArtwork] = useState('later');
   const [done, setDone] = useState(null);
-  const totals = useMemo(() => totalsFor(items, method), [items, method]);
+  const totals = useMemo(() => totalsFor(items), [items]);
 
   const set = (k) => (e) => setValues((v) => ({ ...v, [k]: e.target.value }));
 
@@ -123,24 +123,18 @@ export default function Checkout() {
               {field('city', 'Town or city', { autoComplete: 'address-level2' })}
               {field('postcode', 'Postcode', { autoComplete: 'postal-code' })}
             </div>
-            <p className="co-hint">United Kingdom only in this demo.</p>
+            <p className="co-hint">United Kingdom only in this demo. One delivery address per order.</p>
           </fieldset>
 
           <fieldset className="co-block">
             <legend><span>3</span> Delivery</legend>
-            {delivery.map((d) => {
-              const free = d.id === 'standard' && totals.subtotal >= freeDeliveryOver;
-              return (
-                <label key={d.id} className="radio-card">
-                  <input type="radio" name="delivery" value={d.id} checked={method === d.id} onChange={() => setMethod(d.id)} />
-                  <span className="radio-card__body">
-                    <strong>{d.label}</strong>
-                    <em>{d.note}</em>
-                  </span>
-                  <span className="radio-card__price">{free ? 'Free' : gbp(d.price)}</span>
-                </label>
-              );
-            })}
+            <div className="radio-card">
+              <span className="radio-card__body">
+                <strong>Tracked UK delivery</strong>
+                <em>{deliveryNote}</em>
+              </span>
+              <span className="radio-card__price">Included</span>
+            </div>
           </fieldset>
 
           <fieldset className="co-block">
@@ -193,23 +187,22 @@ export default function Checkout() {
             {totals.lines.map((l) => (
               <li key={l.id}>
                 <div className="summary__img">
-                  <ProductImage product={l.product} />
+                  <ProductImage product={l.product} src={imagesFor(l.product, l.colour)[0]} />
                   <span className="summary__qty">{l.qty}</span>
                 </div>
                 <div>
                   <p className="summary__name">{l.product.name}</p>
-                  <p className="summary__meta">{[l.colour, l.size, l.style, l.position].filter(Boolean).join(' · ')}</p>
+                  <p className="summary__meta">{[l.methodLabel, l.colour, l.size, l.position].filter(Boolean).join(' · ')}</p>
                 </div>
                 <span className="summary__price">{gbp(l.total)}</span>
               </li>
             ))}
           </ul>
           <div className="summary__rows">
-            <p className="sum-row"><span>Items</span><span>{gbp(totals.gross)}</span></p>
-            {totals.savings > 0 && <p className="sum-row sum-row--save"><span>Team discount</span><span>−{gbp(totals.savings)}</span></p>}
-            <p className="sum-row"><span>Delivery</span><span>{totals.shipping === 0 ? 'Free' : gbp(totals.shipping)}</span></p>
+            <p className="sum-row"><span>Items</span><span>{gbp(totals.subtotal)}</span></p>
+            <p className="sum-row"><span>Delivery</span><span>Included</span></p>
             <p className="sum-row sum-row--big"><span>Total</span><span>{gbp(totals.total)}</span></p>
-            <p className="co-hint">VAT treatment to be confirmed before launch.</p>
+            <p className="co-hint">Emblara is not VAT registered, so no VAT is added.</p>
           </div>
         </aside>
       </div>

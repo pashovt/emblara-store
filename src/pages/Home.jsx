@@ -63,7 +63,7 @@ export default function Home() {
     return () => ctx?.revert();
   }, []);
 
-  const featured = ['pique-polo', 'zip-fleece', 'salon-tunic', 'waterproof-parka', 'logo-hoodie', 'womens-polo', 'bodywarmer', 'logo-cap']
+  const featured = ['mens-polo', 'womens-polo', 'printed-polo', 'heavy-cotton-tee', 'logo-hoodie', 'crew-sweatshirt']
     .map((s) => products.find((p) => p.slug === s));
 
   return (
@@ -102,7 +102,7 @@ export default function Home() {
         <div className="section-head" data-reveal>
           <p className="eyebrow">The range</p>
           <h2 id="featured-title" className="h2">
-            Kit for <em>every</em> shift.
+            Kit for <em>every</em> team.
           </h2>
           <a className="pill pill--ghost-dark" href="#/shop">View all {products.length} products</a>
         </div>
@@ -118,7 +118,7 @@ export default function Home() {
         <ThreadLines className="threads--stone" />
         <blockquote className="gallery__quote" data-reveal>
           <p>
-            Your logo, <em>stitched</em> where you <em>approved</em> it. Every time.
+            Your logo, <em>placed</em> where you <em>approved</em> it. Every time.
           </p>
           <footer>Every order gets a digital proof first</footer>
         </blockquote>
@@ -158,7 +158,7 @@ export default function Home() {
           Send us <em>your</em> logo.
         </h2>
         <p className="cta__sub" data-reveal>
-          Add it at checkout or after you order. We prepare a free digital proof showing placement, size and thread colours. Nothing is made until you approve it.
+          Add it at checkout or after you order. We prepare a free digital proof showing placement, size and colours. Nothing is made until you approve it.
         </p>
         <div className="cta__actions" data-reveal>
           <a className="pill pill--copper pill--lg" href="#/shop">Build your kit</a>

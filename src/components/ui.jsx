@@ -46,8 +46,8 @@ export function Marquee({ items, reverse = false, className = '' }) {
 }
 
 // ---------- product image or labelled placeholder ----------
-export function ProductImage({ product, index = 0, className = '', sizes }) {
-  const src = product.images[index];
+export function ProductImage({ product, index = 0, className = '', sizes, src: override }) {
+  const src = override ?? product.images[index];
   if (src) {
     return (
       <img

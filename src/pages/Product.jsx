@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { bySlug, products } from '../data/products.js';
-import { tiers } from '../data/site.js';
+import { bySlug, categories, imagesFor, products } from '../data/products.js';
+import { breaks, deliveryNote } from '../data/site.js';
 import { useCart } from '../store/cart.jsx';
-import { gbp, tierFor, unitPrice } from '../lib/utils.js';
+import { breakIndex, gbp } from '../lib/utils.js';
+import { methodOf, singleQuote, unitPrice } from '../lib/pricing.js';
 import { ProductCard, ProductImage } from '../components/ui.jsx';
 
 export default function Product({ slug }) {
@@ -21,19 +22,36 @@ export default function Product({ slug }) {
 function ProductView({ product }) {
   const { add } = useCart();
   const [image, setImage] = useState(0);
+  const [methodId, setMethodId] = useState(product.methods[0].id);
   const [colour, setColour] = useState(product.colours[0].name);
   const [size, setSize] = useState('');
-  const [position, setPosition] = useState(product.positions[0].label);
-  const [style, setStyle] = useState(product.styles?.[0] ?? '');
+  const [position, setPosition] = useState(product.methods[0].positions[0].label);
   const [qty, setQty] = useState(1);
   const [logoName, setLogoName] = useState('');
   const [error, setError] = useState('');
 
-  const unit = unitPrice(product, { size: size || product.sizes[0], position });
-  const tier = tierFor(qty);
-  const lineTotal = unit * qty * (1 - tier.off);
-  const related = products.filter((p) => p.category === product.category && p.slug !== product.slug).slice(0, 4);
-  const shots = product.images.length ? product.images : [null];
+  const method = methodOf(product, methodId);
+  const quoteFor = (q) => singleQuote(product, { method: methodId, size, position, qty: q });
+  const price = (q) => quoteFor(q).total / q;
+  const lineTotal = quoteFor(qty).total;
+  const unit = lineTotal / qty;
+  const active = breakIndex(qty);
+
+  const shots = imagesFor(product, colour);
+  const ownPhoto = Boolean(product.colourImages?.[colour]);
+  const previewNote = shots.length && !ownPhoto ? `Preview shown in ${product.previewColour}. The ${colour} photo is coming soon.` : '';
+  const gallery = shots.length ? shots : [null];
+  const categoryLabel = categories.find((c) => c.id === product.category)?.label ?? 'Range';
+
+  const sameCategory = products.filter((p) => p.category === product.category && p.slug !== product.slug);
+  const related = [...sameCategory, ...products.filter((p) => p.category !== product.category && p.slug !== product.slug)].slice(0, 4);
+
+  const pickMethod = (id) => {
+    const next = methodOf(product, id);
+    setMethodId(id);
+    setPosition(next.positions[0].label);
+    if (!next.sizes.some((s) => s.label === size)) setSize('');
+  };
 
   const onAdd = (e) => {
     e.preventDefault();
@@ -43,7 +61,7 @@ function ProductView({ product }) {
       return;
     }
     setError('');
-    add({ slug: product.slug, colour, size, position, style, qty, logoName });
+    add({ slug: product.slug, method: methodId, colour, size, position, qty, logoName });
   };
 
   return (
@@ -51,7 +69,7 @@ function ProductView({ product }) {
       <nav className="crumbs" aria-label="Breadcrumb">
         <a href="#/shop">Shop</a>
         <span aria-hidden="true">/</span>
-        <a href={`#/shop/${product.category}`}>{product.category === 'polos' ? 'Polos' : 'Range'}</a>
+        <a href={`#/shop/${product.category}`}>{categoryLabel}</a>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
@@ -59,36 +77,37 @@ function ProductView({ product }) {
       <div className="pdp">
         <div className="pdp__gallery">
           <div className="pdp__main">
-            <ProductImage product={product} index={image} />
+            <ProductImage product={product} src={gallery[Math.min(image, gallery.length - 1)]} />
             <span className="pdp__illustrative">Illustrative image</span>
           </div>
-          {product.images.length > 1 && (
+          {gallery.length > 1 && (
             <div className="pdp__thumbs" role="group" aria-label="Product images">
-              {shots.map((_, i) => (
-                <button key={i} type="button" className="pdp__thumb" aria-pressed={i === image} onClick={() => setImage(i)} aria-label={`Show image ${i + 1}`}>
-                  <ProductImage product={product} index={i} />
+              {gallery.map((src, i) => (
+                <button key={src} type="button" className="pdp__thumb" aria-pressed={i === image} onClick={() => setImage(i)} aria-label={`Show image ${i + 1}`}>
+                  <ProductImage product={product} src={src} />
                 </button>
               ))}
             </div>
           )}
+          {previewNote && <p className="opt__hint">{previewNote}</p>}
         </div>
 
         <form className="pdp__info" onSubmit={onAdd} noValidate>
-          <p className="eyebrow">{product.method}</p>
+          <p className="eyebrow">{method.label}</p>
           <h1 className="pdp__title">{product.name}</h1>
           <p className="pdp__price">
-            {gbp(unit)} <span>each · logo + proof included</span>
+            {gbp(unit)} <span>each · delivery{method.id === 'embroidery' ? ', logo set-up' : ''} and proof included</span>
           </p>
           <p className="pdp__blurb">{product.blurb}</p>
 
-          {product.styles && (
+          {product.methods.length > 1 && (
             <fieldset className="opt">
-              <legend>Style <span>{style}</span></legend>
+              <legend>Finish <span>{method.label}</span></legend>
               <div className="opt__row">
-                {product.styles.map((s) => (
-                  <label key={s} className="chip">
-                    <input type="radio" name="style" value={s} checked={style === s} onChange={() => setStyle(s)} />
-                    <span>{s}</span>
+                {product.methods.map((m) => (
+                  <label key={m.id} className="chip">
+                    <input type="radio" name="method" value={m.id} checked={methodId === m.id} onChange={() => pickMethod(m.id)} />
+                    <span>{m.label} · from {gbp(unitPrice(product, { method: m.id, qty: 1 }))}</span>
                   </label>
                 ))}
               </div>
@@ -100,7 +119,7 @@ function ProductView({ product }) {
             <div className="opt__row">
               {product.colours.map((c) => (
                 <label key={c.name} className="swatch" title={c.name}>
-                  <input type="radio" name="colour" value={c.name} checked={colour === c.name} onChange={() => setColour(c.name)} />
+                  <input type="radio" name="colour" value={c.name} checked={colour === c.name} onChange={() => { setColour(c.name); setImage(0); }} />
                   <span style={{ background: c.hex }} />
                   <em className="visually-hidden">{c.name}</em>
                 </label>
@@ -111,21 +130,21 @@ function ProductView({ product }) {
           <fieldset className={`opt${error ? ' opt--error' : ''}`} id="size-group" tabIndex={-1} aria-describedby={error ? 'size-error' : undefined}>
             <legend>Size <span>{size || 'Choose'}</span></legend>
             <div className="opt__row">
-              {product.sizes.map((s) => (
-                <label key={s} className="chip">
-                  <input type="radio" name="size" value={s} checked={size === s} onChange={() => { setSize(s); setError(''); }} />
-                  <span>{s}{product.sizePrices ? ` · ${gbp(product.sizePrices[s])}` : ''}</span>
+              {method.sizes.map((s) => (
+                <label key={s.label} className="chip">
+                  <input type="radio" name="size" value={s.label} checked={size === s.label} onChange={() => { setSize(s.label); setError(''); }} />
+                  <span>{s.label}{s.add ? ` +${gbp(s.add)}` : ''}</span>
                 </label>
               ))}
             </div>
             {error && <p className="opt__error" id="size-error">{error}</p>}
-            <p className="opt__hint">Mixing sizes? Add each size to the bag. Team discounts count them together.</p>
+            <p className="opt__hint">Mixing sizes? Add each size to the bag. They are priced together as one order.</p>
           </fieldset>
 
           <fieldset className="opt">
             <legend>Logo position</legend>
             <div className="opt__row">
-              {product.positions.map((p) => (
+              {method.positions.map((p) => (
                 <label key={p.label} className="chip">
                   <input type="radio" name="position" value={p.label} checked={position === p.label} onChange={() => setPosition(p.label)} />
                   <span>{p.label}{p.add ? ` +${gbp(p.add)}` : ''}</span>
@@ -152,27 +171,28 @@ function ProductView({ product }) {
           </div>
 
           <table className="tiers">
-            <caption>Team pricing per piece</caption>
+            <caption>Price per piece by quantity</caption>
             <tbody>
               <tr>
-                {tiers.map((t) => (
-                  <td key={t.min} className={t === tier ? 'is-active' : ''}>
-                    <span>{t.label}</span>
-                    <strong>{gbp(unit * (1 - t.off))}</strong>
+                {breaks.map((b, i) => (
+                  <td key={b.min} className={i === active ? 'is-active' : ''}>
+                    <span>{b.label}</span>
+                    <strong>{gbp(price(b.min))}</strong>
                   </td>
                 ))}
               </tr>
             </tbody>
           </table>
+          <p className="opt__hint">Prices are for this item on its own. In the bag the whole order is priced together, across items, sizes and colours. {deliveryNote}</p>
 
           <details className="acc" open>
             <summary>Fabric & fit</summary>
-            <p>{product.fabric} · {product.weight}</p>
+            <p>{product.fabricByColour?.[colour] ?? product.fabric}</p>
             <ul>{product.specs.map((s) => <li key={s}>{s}</li>)}</ul>
           </details>
           <details className="acc">
             <summary>Proof & production</summary>
-            <p>After you order, we send a digital proof showing the garment, logo position, size and thread or print colours. Production starts when you approve it. Production and delivery times are confirmed with your proof.</p>
+            <p>After you order, we send a digital proof showing the garment, logo position, size and colours. Production starts when you approve it. Production and delivery times are confirmed with your proof.</p>
           </details>
           <details className="acc">
             <summary>Returns</summary>
@@ -183,7 +203,7 @@ function ProductView({ product }) {
 
       {related.length > 0 && (
         <section className="related" aria-labelledby="related-title">
-          <h2 id="related-title" className="h3">Complete the uniform</h2>
+          <h2 id="related-title" className="h3">Complete the kit</h2>
           <div className="grid grid--4">
             {related.map((p) => <ProductCard key={p.slug} product={p} />)}
           </div>
