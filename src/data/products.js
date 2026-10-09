@@ -14,6 +14,7 @@
 // All prices are planning figures, not final. Nothing is on sale.
 
 import { retailAdd, unitPrice } from '../lib/pricing.js';
+import aiShots from './ai-shots.json';
 
 const C = {
   navy: { name: 'Navy', hex: '#1d2840' },
@@ -198,6 +199,13 @@ products.push({
 
 products.forEach((p) => {
   if (p.service) return;
+  // The owner's AI model shot (06-AI-Models), when there is one. The product
+  // opens on that colour, finish and logo position so the first photo is it.
+  p.ai = aiShots[p.slug] ?? null;
+  if (p.ai) {
+    p.colours = [...p.colours.filter((c) => c.name === p.ai.colour), ...p.colours.filter((c) => c.name !== p.ai.colour)];
+    p.methods = [...p.methods.filter((m) => m.id === p.ai.method), ...p.methods.filter((m) => m.id !== p.ai.method)];
+  }
   p.method = p.methods.map((m) => m.label).join(' or ');
   // Lowest price for one piece, for "from £x" labels.
   p.price = Math.min(...p.methods.map((m) => unitPrice(p, { method: m.id, qty: 1 })));
@@ -206,4 +214,4 @@ products.forEach((p) => {
 export const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
 
 // The logo position a product shows by default.
-export const defaultPosition = (product) => product.methods?.[0].positions[0].label ?? '';
+export const defaultPosition = (product) => product.ai?.position ?? product.methods?.[0].positions[0].label ?? '';

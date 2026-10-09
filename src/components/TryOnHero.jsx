@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { tryon } from '../data/site.js';
 import { bySlug } from '../data/products.js';
+import { AI_VIEW } from '../data/placements.js';
 import { gbp, motionOK, scrollToY } from '../lib/utils.js';
 import { Garment, ThreadLines } from './ui.jsx';
 import { useLogo } from '../store/logo.jsx';
@@ -17,7 +18,16 @@ const STEP = 0.62; // radians between garments on the ring
 const DESKTOP = '(min-width: 960px) and (prefers-reduced-motion: no-preference)';
 
 export default function TryOnHero() {
-  const looks = tryon.looks;
+  const looks = tryon.order
+    .map((slug) => bySlug[slug])
+    .filter((p) => p?.ai)
+    .map((p) => ({
+      slug: p.slug,
+      label: p.name,
+      colour: p.ai.colour,
+      hex: p.colours.find((c) => c.name === p.ai.colour)?.hex ?? '#888',
+      position: p.ai.position,
+    }));
   const { mode, setPanelOpen } = useLogo();
   const n = looks.length;
   const root = useRef(null);
@@ -223,7 +233,7 @@ export default function TryOnHero() {
               <Garment
                 product={bySlug[l.slug]}
                 colour={l.colour}
-                view="model-front"
+                view={AI_VIEW}
                 position={l.position}
                 alt={i === active ? `Model wearing the ${l.label} in ${l.colour} with ${mode === 'custom' ? 'your logo' : 'the EMBLARA logo'} (illustrative)` : ''}
                 eager={i < 2}

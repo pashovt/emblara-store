@@ -40,6 +40,14 @@ Pricing model (`src/lib/pricing.js`): order cost = 1.2 × (garments + shipping) 
 
 Light, Dark or System (default: follows the browser). Switch in the header (desktop) or the footer. The choice is remembered in the browser (`emblara-theme`). The page declares `color-scheme: light dark`, so Chrome's forced dark mode no longer darkens it. The fitting-room hero and the gallery stay a lit studio in both themes, because their photos are blended onto the background.
 
+## AI model photos (added 9 Oct 2026)
+
+- The owner's AI models (`06-AI-Models`) wear all 8 launch garments in `06-AI-Models/Product-Mockups/2026-10-09-Gelato`. Import with `node scripts/import-ai-mockups.mjs`. It writes `public/garments/<product>/<colour>-ai-front-emblara.webp` and `src/data/ai-shots.json` (do not edit by hand).
+- Each product opens on its AI shot's colour, finish and logo position. The AI photo is the first image on shop cards, the product page, the fitting-room hero (as a rounded studio card) and the home gallery.
+- The current shots have the Emblara logo baked in, so they show only while the Emblara logo is selected, and only for the placement they were made with. A visitor's own logo, other colours and back views use the clean Gelato photos.
+- Drop a no-logo version next to an original as `<name>-blank.png` and re-run the import: the AI photo then works with any logo and any front placement (positions are already measured from the placeholder boxes, see `aiAnchors` in `src/data/placements.js`).
+- What is still missing, shot by shot: `06-AI-Models/Product-Mockups/00-Website-Missing-Shots.md`.
+
 ## Range
 
 | Product | Gelato model | Finish | From (1 piece) |

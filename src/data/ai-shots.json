@@ -1,0 +1,66 @@
+{
+  "mens-polo": {
+    "colour": "Royal Blue",
+    "method": "embroidery",
+    "position": "Left chest",
+    "model": "02-White-Male",
+    "emblara": "/garments/mens-polo/royal-blue-ai-front-emblara.webp",
+    "blank": null
+  },
+  "womens-polo": {
+    "colour": "French Navy",
+    "method": "embroidery",
+    "position": "Left chest",
+    "model": "01-White-Female",
+    "emblara": "/garments/womens-polo/french-navy-ai-front-emblara.webp",
+    "blank": null
+  },
+  "organic-polo": {
+    "colour": "Black",
+    "method": "embroidery",
+    "position": "Left chest",
+    "model": "03-Black-Male",
+    "emblara": "/garments/organic-polo/black-ai-front-emblara.webp",
+    "blank": null
+  },
+  "printed-polo": {
+    "colour": "Grey Melange",
+    "method": "print",
+    "position": "Front",
+    "model": "02-White-Male",
+    "emblara": "/garments/printed-polo/grey-melange-ai-front-emblara.webp",
+    "blank": null
+  },
+  "heavy-cotton-tee": {
+    "colour": "White",
+    "method": "print",
+    "position": "Front",
+    "model": "02-White-Male",
+    "emblara": "/garments/heavy-cotton-tee/white-ai-front-emblara.webp",
+    "blank": null
+  },
+  "ultra-cotton-tee": {
+    "colour": "Sport Grey",
+    "method": "print",
+    "position": "Front",
+    "model": "03-Black-Male",
+    "emblara": "/garments/ultra-cotton-tee/sport-grey-ai-front-emblara.webp",
+    "blank": null
+  },
+  "logo-hoodie": {
+    "colour": "Navy",
+    "method": "print",
+    "position": "Front",
+    "model": "01-White-Female",
+    "emblara": "/garments/logo-hoodie/navy-ai-front-emblara.webp",
+    "blank": null
+  },
+  "crew-sweatshirt": {
+    "colour": "Sport Grey",
+    "method": "embroidery",
+    "position": "Left chest",
+    "model": "03-Black-Male",
+    "emblara": "/garments/crew-sweatshirt/sport-grey-ai-front-emblara.webp",
+    "blank": null
+  }
+}

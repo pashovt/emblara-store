@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { bySlug, categories, products } from '../data/products.js';
+import { bySlug, categories, defaultPosition, products } from '../data/products.js';
 import { breaks, deliveryNote } from '../data/site.js';
-import { VIEWS, leadView } from '../data/placements.js';
+import { AI_VIEW, leadView, viewsFor } from '../data/placements.js';
 import { useCart } from '../store/cart.jsx';
 import { useLogo } from '../store/logo.jsx';
 import { breakIndex, gbp } from '../lib/utils.js';
 import { methodOf, singleQuote, unitPrice } from '../lib/pricing.js';
 import { Mark, ProductCard, ProductImage } from '../components/ui.jsx';
 
-const VIEW_LABELS = { 'model-front': 'On model, front', 'model-back': 'On model, back', 'flat-front': 'Flat, front', 'flat-back': 'Flat, back' };
+const VIEW_LABELS = { [AI_VIEW]: 'On our model', 'model-front': 'On model, front', 'model-back': 'On model, back', 'flat-front': 'Flat, front', 'flat-back': 'Flat, back' };
 
 export default function Product({ slug }) {
   const product = bySlug[slug];
@@ -77,8 +77,8 @@ function ProductView({ product }) {
   const [methodId, setMethodId] = useState(product.methods[0].id);
   const [colour, setColour] = useState(product.colours[0].name);
   const [size, setSize] = useState('');
-  const [position, setPosition] = useState(product.methods[0].positions[0].label);
-  const [view, setView] = useState(leadView(product.methods[0].positions[0].label));
+  const [position, setPosition] = useState(defaultPosition(product));
+  const [view, setView] = useState(AI_VIEW);
   const [qty, setQty] = useState(1);
   const [error, setError] = useState('');
 
@@ -89,10 +89,13 @@ function ProductView({ product }) {
   const unit = lineTotal / qty;
   const active = breakIndex(qty);
 
+  // Front positions open on the AI model photo when it fits, back ones on the back.
   const pickPosition = (label) => {
     setPosition(label);
-    setView(leadView(label));
+    setView(leadView(label) === 'model-back' ? 'model-back' : AI_VIEW);
   };
+  const views = viewsFor(product, colour, position, !(mode === 'custom' && custom));
+  const shown = views.includes(view) ? view : views[0];
 
   const pickMethod = (id) => {
     const next = methodOf(product, id);
@@ -120,14 +123,14 @@ function ProductView({ product }) {
         <div className="pdp__gallery">
           <div className="pdp__stage">
             <div className="pdp__thumbs" role="group" aria-label="Product views">
-              {VIEWS.map((v) => (
-                <button key={v} type="button" className="pdp__thumb" aria-pressed={v === view} onClick={() => setView(v)} aria-label={VIEW_LABELS[v]}>
+              {views.map((v) => (
+                <button key={v} type="button" className="pdp__thumb" aria-pressed={v === shown} onClick={() => setView(v)} aria-label={VIEW_LABELS[v]}>
                   <ProductImage product={product} colour={colour} view={v} position={position} />
                 </button>
               ))}
             </div>
             <div className="pdp__main">
-              <ProductImage product={product} colour={colour} view={view} position={position} eager />
+              <ProductImage product={product} colour={colour} view={shown} position={position} eager />
               <span className="pdp__illustrative">Illustrative image</span>
             </div>
           </div>

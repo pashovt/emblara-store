@@ -1,6 +1,6 @@
 import { gbp } from '../lib/utils.js';
 import { defaultPosition } from '../data/products.js';
-import { boxesFor, garmentKey } from '../data/placements.js';
+import { AI_VIEW, aiUsable, boxesFor, garmentKey } from '../data/placements.js';
 import { useLogo } from '../store/logo.jsx';
 
 // ---------- brand mark ----------
@@ -56,17 +56,25 @@ const pct = (n) => `${(n * 100).toFixed(2)}%`;
 
 export const garmentSrc = (product, colour, view) => `/garments/${garmentKey(product.slug)}/${kebab(colour)}-${view}.webp`;
 
+// view 'ai-front' asks for the owner's AI model photo. It is used when it fits
+// the colour, position and logo; otherwise the Gelato model photo stands in.
 export function Garment({ product, colour, view = 'model-front', position, className = '', alt, eager = false }) {
   const { artFor } = useLogo();
   const c = product.colours.find((x) => x.name === colour) ?? product.colours[0];
-  const boxes = boxesFor(product.slug, view, position ?? defaultPosition(product));
+  const pos = position ?? defaultPosition(product);
   const art = artFor(c.hex);
+  const emblara = art.kind === 'emblara';
+  const v = view === AI_VIEW && !aiUsable(product, c.name, pos, emblara) ? 'model-front' : view;
+  // The EMBLARA AI photo already carries the logo at its own placement.
+  const baked = v === AI_VIEW && emblara && pos === product.ai.position;
+  const src = v === AI_VIEW ? (baked ? product.ai.emblara : product.ai.blank) : garmentSrc(product, c.name, v);
+  const boxes = baked ? [] : boxesFor(product.slug, v, pos);
   const logoNote = art.kind === 'custom' ? 'your logo' : 'the EMBLARA logo';
   return (
-    <div className={`garment ${className}`}>
+    <div className={`garment${v === AI_VIEW ? ' garment--ai' : ''} ${className}`}>
       <img
         className="garment__photo"
-        src={garmentSrc(product, c.name, view)}
+        src={src}
         alt={alt ?? `${product.name} in ${c.name} with ${logoNote} (illustrative)`}
         width="1000"
         height="1000"
@@ -108,7 +116,7 @@ export function ProductCard({ product }) {
   return (
     <a className="card" href={`#/product/${product.slug}`}>
       <div className={`card__media${product.service ? '' : ' card__media--swap'}`}>
-        <ProductImage product={product} />
+        <ProductImage product={product} view={AI_VIEW} />
         {!product.service && <ProductImage product={product} view="flat-front" className="card__alt" />}
         {product.badge && <span className="card__badge">{product.badge}</span>}
       </div>

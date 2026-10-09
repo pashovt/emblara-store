@@ -46,12 +46,13 @@ export const statement = [
 
 // Editorial row: col = start column, span = width (12-column grid),
 // drop = vertical offset in rem, speed = parallax distance in px.
+// Each item shows the product's AI model shot (its own colour and logo position).
 export const gallery = [
-  { slug: 'logo-hoodie', colour: 'White', view: 'model-back', position: 'Back', caption: 'Hoodie — back print', col: 1, span: 3, drop: 6, speed: -50 },
-  { slug: 'womens-polo', colour: 'French Navy', view: 'model-front', position: 'Left chest', caption: 'Women’s polo — left chest', col: 4, span: 3, drop: 0, speed: 30 },
-  { slug: 'mens-polo', colour: 'Black', view: 'model-front', position: 'Left chest', caption: 'Men’s polo — left chest', col: 7, span: 2, drop: 10, speed: -70 },
-  { slug: 'printed-polo', colour: 'White', view: 'model-back', position: 'Back', caption: 'Printed polo — back', col: 9, span: 2, drop: 3, speed: -20 },
-  { slug: 'crew-sweatshirt', colour: 'Sport Grey', view: 'model-front', position: 'Left chest', caption: 'Sweatshirt — left chest', col: 11, span: 2, drop: 8, speed: 40 },
+  { slug: 'logo-hoodie', caption: 'Hoodie — front print', col: 1, span: 3, drop: 6, speed: -50 },
+  { slug: 'womens-polo', caption: 'Women’s polo — left chest', col: 4, span: 3, drop: 0, speed: 30 },
+  { slug: 'organic-polo', caption: 'Organic polo — left chest', col: 7, span: 2, drop: 10, speed: -70 },
+  { slug: 'heavy-cotton-tee', caption: 'Heavy cotton tee — front print', col: 9, span: 2, drop: 3, speed: -20 },
+  { slug: 'crew-sweatshirt', caption: 'Sweatshirt — left chest', col: 11, span: 2, drop: 8, speed: 40 },
 ];
 
 export const process = [
@@ -61,12 +62,8 @@ export const process = [
   { title: 'Wear it', body: 'Made to the approved proof and sent tracked to one UK address.' },
 ];
 
-// Try-on hero. Gelato "man2" previews: the pose is identical within each
-// garment type, so colour changes look like the garment sliding on. The logo
-// is drawn on live (EMBLARA or the visitor's own) at `position`.
-const look = (slug, colour, hex, label) => ({ slug, colour, hex, label, position: 'Left chest' });
-
-// Only colours the range actually offers: Navy, Sport Grey, Black, White.
+// Try-on hero: the owner's AI model shots (06-AI-Models), one per product, in
+// this order. Colour and logo position come from each shot (ai-shots.json).
 export const tryon = {
   eyebrow: 'Virtual fitting room',
   lines: [
@@ -74,16 +71,6 @@ export const tryon = {
     { text: 'team kit', serif: false },
     { text: 'on.', serif: false },
   ],
-  sub: 'Scroll to put the next garment on. One logo, every colour, ready for the whole team.',
-  looks: [
-    look('heavy-cotton-tee', 'Navy', '#1d2840', 'Heavy cotton tee'),
-    look('heavy-cotton-tee', 'Sport Grey', '#9a9ea3', 'Heavy cotton tee'),
-    look('heavy-cotton-tee', 'White', '#f5f5f2', 'Heavy cotton tee'),
-    look('logo-hoodie', 'Black', '#121214', 'Logo hoodie'),
-    look('logo-hoodie', 'Navy', '#1d2840', 'Logo hoodie'),
-    look('logo-hoodie', 'White', '#f5f5f2', 'Logo hoodie'),
-    look('crew-sweatshirt', 'Sport Grey', '#9a9ea3', 'Crew sweatshirt'),
-    look('crew-sweatshirt', 'Navy', '#1d2840', 'Crew sweatshirt'),
-    look('crew-sweatshirt', 'Black', '#121214', 'Crew sweatshirt'),
-  ],
+  sub: 'Scroll through the range on our team of models. One logo, every garment, ready for the whole team.',
+  order: ['logo-hoodie', 'heavy-cotton-tee', 'organic-polo', 'womens-polo', 'mens-polo', 'ultra-cotton-tee', 'printed-polo', 'crew-sweatshirt'],
 };
