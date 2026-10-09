@@ -1,5 +1,5 @@
 import { gbp } from '../lib/utils.js';
-import { defaultPosition } from '../data/products.js';
+import { defaultPosition, materialFor } from '../data/products.js';
 import { AI_VIEW, aiShot, boxesFor, fallbackView, garmentKey, isAiView } from '../data/placements.js';
 import { useLogo } from '../store/logo.jsx';
 
@@ -132,7 +132,7 @@ export function ProductCard({ product }) {
       <div className={`card__media${product.service ? '' : ' card__media--swap'}`}>
         <ProductImage product={product} view={AI_VIEW} />
         {!product.service && <ProductImage product={product} view="flat-front" className="card__alt" />}
-        {product.badge && <span className="card__badge">{product.badge}</span>}
+        {product.material && <span className="card__badge">{materialFor(product, product.colours[0].name)}</span>}
       </div>
       <div className="card__body">
         <div className="card__row">

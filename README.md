@@ -46,7 +46,8 @@ Light, Dark or System (default: follows the browser). Switch in the header (desk
 - Import with `node scripts/import-ai-mockups.mjs`. It writes `public/garments/<product>/<colour>-ai-front.webp`, `-ai-front-alt.webp`, `-ai-back.webp` and `src/data/ai-shots.json` (do not edit by hand).
 - The logo is always drawn on top: the EMBLARA lockup (copper mark + wordmark, navy on light garments, cream on dark) or the visitor's own logo. Logo positions per photo are `aiAnchors` in `src/data/placements.js`, read off a grid on each shot and checked on all 41.
 - Product pages show: AI front, second model (if any), AI back (Gelato back for colours without an AI back), then the Gelato flats. Each product opens on the colour, finish and position of its original mockup.
-- AI photos lead the shop cards, product pages, fitting-room hero (rounded studio card) and home gallery.
+- AI photos lead the shop cards, product pages, fitting-room hero and home gallery.
+- **Backgrounds removed:** every photo (AI and Gelato) is cut out on this Mac with Apple Vision (`scripts/cutout.swift`, run automatically by both image scripts), so models and garments sit straight on the page in light and dark themes.
 
 ## Range
 

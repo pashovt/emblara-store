@@ -45,12 +45,12 @@ export const categories = [
 export const products = [
   {
     slug: 'mens-polo', name: 'Men’s polo', category: 'polos',
+    material: '100% cotton',
     ship: { first: 3.42, extra: 0.97 },
     colours: [C.black, C.white, C.pureGrey, C.royal],
     fabric: '100% combed ringspun cotton, 180 gsm',
     blurb: 'A fitted cotton polo with your logo stitched on the left chest. A smart everyday shirt for staff and teams.',
     specs: ['Men’s fitted cut', 'Embroidered logo, left chest or large back', 'Four colours', 'Sizes S to 3XL'],
-    badge: '100% cotton',
     methods: [
       {
         id: 'embroidery', label: 'Embroidered', base: 12.89, digitised: true,
@@ -61,12 +61,12 @@ export const products = [
   },
   {
     slug: 'womens-polo', name: 'Women’s polo', category: 'polos',
+    material: '100% cotton',
     ship: { first: 3.42, extra: 0.97 },
     colours: [C.frenchNavy, C.white, C.black],
     fabric: '100% combed ringspun cotton, 180 gsm',
     blurb: 'A shaped cotton polo for mixed teams, salons and front-of-house staff, with your logo embroidered on the left chest.',
     specs: ['Women’s fitted cut', 'Embroidered logo, left chest or large back', 'Three colours', 'Sizes S to L'],
-    badge: '100% cotton',
     methods: [
       {
         id: 'embroidery', label: 'Embroidered', base: 12.89, digitised: true,
@@ -77,12 +77,12 @@ export const products = [
   },
   {
     slug: 'organic-polo', name: 'Organic cotton polo', category: 'polos',
+    material: 'Organic cotton',
     ship: { first: 3.42, extra: 0.97 },
     colours: [C.black, C.white],
     fabric: '100% organically grown cotton',
     blurb: 'A polo in organically grown cotton, embroidered with your logo. For teams that want a lower-impact fabric.',
     specs: ['Men’s cut', 'Embroidered logo, left chest or large back', 'Two colours', 'Sizes S to 3XL'],
-    badge: 'Organic cotton',
     methods: [
       {
         id: 'embroidery', label: 'Embroidered', base: 14.82, digitised: true,
@@ -93,6 +93,8 @@ export const products = [
   },
   {
     slug: 'printed-polo', name: 'Printed polo', category: 'polos',
+    material: '100% cotton',
+    materialByColour: { 'Grey Melange': '85% cotton' },
     ship: { first: 3.42, extra: 0.97 },
     colours: [C.navy, C.black, C.white, C.greyMelange],
     fabric: '100% ringspun cotton piqué, 210 gsm',
@@ -109,6 +111,8 @@ export const products = [
   },
   {
     slug: 'heavy-cotton-tee', name: 'Heavy cotton tee', category: 'tees',
+    material: '100% cotton',
+    materialByColour: { 'Sport Grey': '90% cotton' },
     ship: { first: 3.19, extra: 0.95 },
     colours: [C.navy, C.sportGrey, C.white, C.black],
     fabric: '100% cotton (preshrunk jersey knit)',
@@ -130,6 +134,8 @@ export const products = [
   },
   {
     slug: 'ultra-cotton-tee', name: 'Ultra cotton tee', category: 'tees',
+    material: '100% cotton',
+    materialByColour: { 'Sport Grey': '90% cotton' },
     ship: { first: 2.8, extra: 0.79 },
     colours: [C.sportGrey, C.white, C.navy, C.black],
     fabric: '100% cotton',
@@ -146,6 +152,7 @@ export const products = [
   },
   {
     slug: 'logo-hoodie', name: 'Logo hoodie', category: 'sweats',
+    material: '50/50 cotton-poly',
     ship: { first: 4.39, extra: 1.19 },
     colours: [C.navy, C.black, C.white, C.sportGrey],
     fabric: '50% cotton / 50% polyester',
@@ -166,6 +173,7 @@ export const products = [
   },
   {
     slug: 'crew-sweatshirt', name: 'Crew sweatshirt', category: 'sweats',
+    material: '50/50 cotton-poly',
     ship: { first: 3.99, extra: 0.99 },
     colours: [C.navy, C.sportGrey, C.white, C.black],
     fabric: '50% cotton / 50% polyester',
@@ -212,6 +220,9 @@ products.forEach((p) => {
 });
 
 export const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
+
+// Short fabric tag for a colour, e.g. '100% cotton' or '50/50 cotton-poly'.
+export const materialFor = (product, colour) => product.materialByColour?.[colour] ?? product.material;
 
 // The logo position a product shows by default.
 export const defaultPosition = (product) => product.ai?.position ?? product.methods?.[0].positions[0].label ?? '';

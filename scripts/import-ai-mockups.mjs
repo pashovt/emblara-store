@@ -12,11 +12,13 @@
 //   public/garments/<product>/<colour>-ai-back.webp        main model, back
 //   src/data/ai-shots.json                                  what exists (do not edit)
 //
-// The 1024 x 1536 portraits are widened to a square by extending the plain
-// studio backdrop (blurred edge pixels), then scaled to 1000 x 1000, so they
-// share one square frame with the Gelato photos and the logo placement maths.
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+// Each model is cut out of the grey studio backdrop (Apple Vision, see
+// cutout.swift), centred on a transparent square and scaled to 1000 x 1000, so
+// they sit on any page colour and share one frame with the logo placement maths.
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { cutoutMany } from './lib-cutout.mjs';
 
 const ROOT = '../../../06-AI-Models/Product-Mockups/';
 const EXPANSION = `${ROOT}2026-10-09-Website-Expansion/`;
@@ -44,6 +46,7 @@ for (const r of await parseCsv(`${FIRST_SET}image-index.csv`)) {
 }
 
 const rows = (await parseCsv(`${EXPANSION}image-index.csv`)).filter((r) => r.variant === 'blank');
+const jobs = [];
 for (const r of rows) {
   const product = shots[r.slug];
   if (!product) continue;
@@ -52,16 +55,20 @@ for (const r of rows) {
   product.shots[r.colour] = { ...product.shots[r.colour], [view]: file };
   if (view === 'ai-front-alt') product.altModel = r.model_id;
 
-  const src = `${EXPANSION}${r.file}`;
-  await mkdir(`public/garments/${r.slug}`, { recursive: true });
-  const { width, height } = await sharp(src).metadata();
+  jobs.push([`${EXPANSION}${r.file}`, `public${file}`]);
+}
+
+const tmp = await mkdtemp(`${tmpdir()}/emblara-cutout-`);
+const cut = jobs.map(([src], i) => [src, `${tmp}/${i}.png`]);
+cutoutMany(cut);
+for (const [i, [, out]] of jobs.entries()) {
+  const png = cut[i][1];
+  await mkdir(out.slice(0, out.lastIndexOf('/')), { recursive: true });
+  const { width, height } = await sharp(png).metadata();
   const pad = Math.max(0, Math.round((height - width) / 2));
-  // Side bands: the edge pixels stretched outwards and blurred, so the plain
-  // studio backdrop continues without streaks. The photo sits on top, untouched.
-  const bands = await sharp(src).extend({ left: pad, right: pad, extendWith: 'copy' }).blur(30).toBuffer();
-  const square = await sharp(bands).composite([{ input: src, left: pad, top: 0 }]).toBuffer();
-  await sharp(square).resize(1000, 1000).webp({ quality: 84 }).toFile(`public${file}`);
-  console.log('ok', file);
+  const square = await sharp(png).extend({ left: pad, right: pad, background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer();
+  await sharp(square).resize(1000, 1000).webp({ quality: 84, alphaQuality: 90 }).toFile(out);
+  console.log('ok', out);
 }
 
 await writeFile('src/data/ai-shots.json', JSON.stringify(shots, null, 2) + '\n');

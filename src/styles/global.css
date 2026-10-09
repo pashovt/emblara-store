@@ -23,7 +23,8 @@
   --deep: var(--ink);        /* sections that stay dark in both themes */
   --field: #ffffff;          /* form fields */
   --on-copper: #0d1526;      /* text on copper buttons */
-  color-scheme: light;
+  --tile: #ffffff;           /* behind product photos */
+  color-scheme: light dark;
 
   --f-sans: 'Mona Sans Variable', 'Helvetica Neue', Arial, system-ui, sans-serif;
   --f-serif: 'Instrument Serif', 'Times New Roman', Georgia, serif;
@@ -816,7 +817,7 @@ main:focus {
   aspect-ratio: 1;
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--white);
+  background: var(--tile);
 }
 
 .card__media .pimg {
@@ -1021,7 +1022,6 @@ main:focus {
   margin-top: var(--drop);
   display: block;
   text-decoration: none;
-  mix-blend-mode: multiply;
 }
 
 .gallery__item img {
@@ -1316,7 +1316,7 @@ main:focus {
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--white);
+  background: var(--tile);
 }
 
 .line__name {
@@ -1567,7 +1567,7 @@ main:focus {
   aspect-ratio: 1;
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--white);
+  background: var(--tile);
 }
 
 .pdp__illustrative {
@@ -1596,7 +1596,7 @@ main:focus {
   border: 2px solid transparent;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--white);
+  background: var(--tile);
   cursor: pointer;
 }
 
@@ -2088,7 +2088,7 @@ main:focus {
   aspect-ratio: 1;
   border-radius: 10px;
   overflow: visible;
-  background: var(--white);
+  background: var(--tile);
 }
 
 .summary__img .pimg {
@@ -2212,7 +2212,7 @@ main:focus {
   height: 100vh;
   height: 100svh;
   min-height: 640px;
-  background: radial-gradient(ellipse 50% 60% at 50% 45%, #f7f6f2 0%, var(--bone) 70%);
+  background: radial-gradient(ellipse 50% 60% at 50% 45%, var(--bone-2) 0%, var(--bone) 70%);
   overflow: hidden;
   isolation: isolate;
   touch-action: pan-y;
@@ -2239,7 +2239,6 @@ main:focus {
   top: 36%;
   width: clamp(170px, 24vh, 300px);
   height: auto;
-  mix-blend-mode: multiply;
   user-select: none;
   pointer-events: none;
   opacity: 0;
@@ -2253,7 +2252,6 @@ main:focus {
   aspect-ratio: 1 / 2;
   transform: translateX(-50%);
   z-index: 5;
-  mix-blend-mode: multiply;
 }
 
 .tryon__glow {
@@ -2523,6 +2521,7 @@ main:focus {
   --line: rgba(236, 233, 226, 0.14);
   --deep: #070a10;
   --field: #171d28;
+  --tile: #1a2030;
   color-scheme: dark;
 }
 
@@ -2536,13 +2535,12 @@ main:focus {
     --line: rgba(236, 233, 226, 0.14);
     --deep: #070a10;
     --field: #171d28;
+    --tile: #1a2030;
     color-scheme: dark;
   }
 }
 
-/* The fitting room and the gallery blend garment photos into their
-   background, so they stay a lit studio in both themes. */
-.tryon,
+/* The gallery keeps its stone backdrop in both themes. */
 .gallery {
   --ink: #0d1526;
   --bone: #eeece6;
@@ -2551,7 +2549,6 @@ main:focus {
   --text-dim: #4a5060;
   --line: rgba(13, 21, 38, 0.14);
   color: var(--text);
-  color-scheme: light;
 }
 
 /* ---------- garment photo + live logo ---------- */
@@ -2640,7 +2637,7 @@ main:focus {
   gap: 0.6rem;
   padding: 0.6rem;
   border-radius: var(--radius);
-  background: var(--white);
+  background: var(--tile);
   width: min(100%, calc((100svh - var(--header-h) - 3rem) * 1.19));
 }
 
@@ -3075,22 +3072,4 @@ main:focus {
 }
 
 /* ---------- AI model photos ---------- */
-/* They come with their own grey studio backdrop, so they sit as photos (no
-   multiply). In the fitting room the backdrop fades into the hero. */
-.gallery__item:has(.garment--ai) {
-  mix-blend-mode: normal;
-}
-
-.gallery__item .garment--ai {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.tryon__model:has(.garment--ai) {
-  top: 1rem;
-  bottom: 1.5rem;
-  mix-blend-mode: normal;
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: 0 30px 60px -30px rgba(13, 21, 38, 0.45);
-}
+/* Cut out of their studio backdrop, so they sit straight on the page. */

@@ -1,5 +1,6 @@
 // Downloads the clean Gelato catalogue previews (no logo) used by the store.
 // Logos are drawn on top in the browser, so these files never carry a logo.
+// Each photo is cut out of its white background (Apple Vision, cutout.swift).
 //
 //   public/garments/<product>/<colour>-<view>.webp
 //   public/garments/sources.csv            (file -> Gelato preview URL)
@@ -9,7 +10,10 @@
 // Gildan 2000 has no public preview; by the owner's instruction it reuses the
 // Gildan 5000 images (see src/data/products.js).
 import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { cutoutMany } from './lib-cutout.mjs';
 
 const B = 'https://s3.eu-west-1.amazonaws.com/gelato-api-live/preflight/preview/';
 
@@ -58,4 +62,11 @@ for (const [folder, [id, views, colours]] of Object.entries(garments)) {
   console.log('ok', folder);
 }
 await writeFile('public/garments/sources.csv', rows.join('\n') + '\n');
+
+// Transparent backgrounds, so garments sit on any page colour.
+const tmp = await mkdtemp(`${tmpdir()}/emblara-cutout-`);
+const files = rows.slice(1).map((r) => `public/garments/${r.split(',')[0]}`);
+const cut = files.map((f, i) => [f, `${tmp}/${i}.png`]);
+cutoutMany(cut);
+for (const [i, f] of files.entries()) await sharp(cut[i][1]).webp({ quality: 84, alphaQuality: 90 }).toFile(f);
 console.log(`${rows.length - 1} files, ${missing} missing`);
