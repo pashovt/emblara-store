@@ -4,7 +4,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { marquee, statement, gallery, process } from '../data/site.js';
 import TryOnHero from '../components/TryOnHero.jsx';
 import { bySlug, products } from '../data/products.js';
-import { AI_VIEW } from '../data/placements.js';
 import { Garment, Marquee, ProductCard, ThreadLines } from '../components/ui.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -127,7 +126,7 @@ export default function Home() {
           {gallery.map((g) => (
             <a key={g.caption} className="gallery__item" href={`#/product/${g.slug}`} style={{ '--col': g.col, '--span': g.span, '--drop': `${g.drop}rem` }} data-speed={g.speed}>
               <span className="gallery__cap">{g.caption}</span>
-              <Garment product={bySlug[g.slug]} view={AI_VIEW} />
+              <Garment product={bySlug[g.slug]} view={g.view} position={g.position} />
             </a>
           ))}
         </div>

@@ -1,6 +1,6 @@
 import { gbp } from '../lib/utils.js';
 import { defaultPosition } from '../data/products.js';
-import { AI_VIEW, aiUsable, boxesFor, garmentKey } from '../data/placements.js';
+import { AI_VIEW, aiShot, boxesFor, fallbackView, garmentKey, isAiView } from '../data/placements.js';
 import { useLogo } from '../store/logo.jsx';
 
 // ---------- brand mark ----------
@@ -56,22 +56,36 @@ const pct = (n) => `${(n * 100).toFixed(2)}%`;
 
 export const garmentSrc = (product, colour, view) => `/garments/${garmentKey(product.slug)}/${kebab(colour)}-${view}.webp`;
 
-// view 'ai-front' asks for the owner's AI model photo. It is used when it fits
-// the colour, position and logo; otherwise the Gelato model photo stands in.
+// EMBLARA lockup: copper mark over the wordmark, as on the owner's mockups.
+// The wordmark is navy on light garments and cream on dark ones.
+export function EmblaraLockup({ onDark, className }) {
+  return (
+    <svg className={className} viewBox="0 0 1400 1000" aria-hidden="true">
+      <g transform="translate(315 0)">
+        <path d={TOP} fill="currentColor" />
+        <path d={BOTTOM} fill="currentColor" />
+      </g>
+      <text x="700" y="920" textAnchor="middle" fontFamily="'Mona Sans Variable', Arial, sans-serif" fontWeight="700" fontSize="210" letterSpacing="60" fill={onDark ? '#f1ece4' : '#16233d'}>
+        EMBLARA
+      </text>
+    </svg>
+  );
+}
+
+// AI views ('ai-front', 'ai-front-alt', 'ai-back') use the owner's blank AI
+// model photo for that colour; without one, the Gelato photo stands in.
 export function Garment({ product, colour, view = 'model-front', position, className = '', alt, eager = false }) {
   const { artFor } = useLogo();
   const c = product.colours.find((x) => x.name === colour) ?? product.colours[0];
   const pos = position ?? defaultPosition(product);
   const art = artFor(c.hex);
-  const emblara = art.kind === 'emblara';
-  const v = view === AI_VIEW && !aiUsable(product, c.name, pos, emblara) ? 'model-front' : view;
-  // The EMBLARA AI photo already carries the logo at its own placement.
-  const baked = v === AI_VIEW && emblara && pos === product.ai.position;
-  const src = v === AI_VIEW ? (baked ? product.ai.emblara : product.ai.blank) : garmentSrc(product, c.name, v);
-  const boxes = baked ? [] : boxesFor(product.slug, v, pos);
+  const aiSrc = isAiView(view) ? aiShot(product, c.name, view) : null;
+  const v = isAiView(view) && !aiSrc ? fallbackView(view) : view;
+  const src = aiSrc ?? garmentSrc(product, c.name, v);
+  const boxes = boxesFor(product.slug, v, pos);
   const logoNote = art.kind === 'custom' ? 'your logo' : 'the EMBLARA logo';
   return (
-    <div className={`garment${v === AI_VIEW ? ' garment--ai' : ''} ${className}`}>
+    <div className={`garment${aiSrc ? ' garment--ai' : ''} ${className}`}>
       <img
         className="garment__photo"
         src={src}
@@ -89,7 +103,7 @@ export function Garment({ product, colour, view = 'model-front', position, class
           style={{ left: pct(b.x - b.w / 2), top: pct(b.y - b.h / 2), width: pct(b.w), height: pct(b.h) }}
           aria-hidden="true"
         >
-          {art.kind === 'custom' ? <img src={art.src} alt="" draggable="false" /> : <Mark className="garment__mark" />}
+          {art.kind === 'custom' ? <img src={art.src} alt="" draggable="false" /> : <EmblaraLockup className="garment__mark" onDark={art.darkGarment} />}
         </span>
       ))}
     </div>

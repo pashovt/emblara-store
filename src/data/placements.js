@@ -101,20 +101,22 @@ const rules = {
   },
 };
 
-// The owner's AI model photos (view 'ai-front'): anchors read off each photo,
-// plus the exact box of the placement each photo shows, taken from the dashed
-// "Your logo or text here" outline in its placeholder version.
+// The owner's AI model photos (blank, no logo). Anchors per product and view,
+// read off a grid on each photo; the colour versions of a product share their
+// framing. 'ai-front-alt' is the second model on the unisex garments.
 const aiAnchors = {
-  'mens-polo': { a: [0.49, 0.28, 0.5, 0.35], exact: { 'Left chest': [0.6, 0.452, 0.067, 0.063] } },
-  'womens-polo': { a: [0.5, 0.31, 0.48, 0.34], exact: { 'Left chest': [0.588, 0.429, 0.06, 0.058] } },
-  'organic-polo': { a: [0.49, 0.27, 0.5, 0.38], exact: { 'Left chest': [0.59, 0.423, 0.067, 0.053] } },
-  'printed-polo': { a: [0.49, 0.26, 0.49, 0.36], exact: { Front: [0.59, 0.412, 0.07, 0.057] } },
-  'heavy-cotton-tee': { a: [0.5, 0.26, 0.5, 0.38], exact: { Front: [0.5, 0.452, 0.175, 0.187] } },
-  'ultra-cotton-tee': { a: [0.5, 0.25, 0.5, 0.4], exact: { Front: [0.507, 0.442, 0.17, 0.183] } },
-  'logo-hoodie': { a: [0.5, 0.31, 0.5, 0.38], exact: { Front: [0.503, 0.464, 0.163, 0.132] } },
-  'crew-sweatshirt': { a: [0.5, 0.26, 0.48, 0.4], exact: { 'Left chest': [0.613, 0.407, 0.07, 0.057] } },
+  'mens-polo': { 'ai-front': [0.49, 0.29, 0.51, 0.44], 'ai-back': [0.5, 0.25, 0.52, 0.44] },
+  'womens-polo': { 'ai-front': [0.495, 0.33, 0.49, 0.4], 'ai-back': [0.5, 0.29, 0.48, 0.4] },
+  'organic-polo': { 'ai-front': [0.49, 0.27, 0.5, 0.44], 'ai-back': [0.5, 0.25, 0.5, 0.44] },
+  'printed-polo': { 'ai-front': [0.49, 0.28, 0.5, 0.4], 'ai-back': [0.5, 0.25, 0.5, 0.4] },
+  'heavy-cotton-tee': { 'ai-front': [0.49, 0.27, 0.48, 0.42], 'ai-back': [0.5, 0.25, 0.48, 0.42], 'ai-front-alt': [0.495, 0.32, 0.49, 0.4] },
+  'ultra-cotton-tee': { 'ai-front': [0.5, 0.26, 0.48, 0.44], 'ai-back': [0.5, 0.25, 0.48, 0.44], 'ai-front-alt': [0.5, 0.32, 0.49, 0.4] },
+  'logo-hoodie': { 'ai-front': [0.5, 0.32, 0.5, 0.44], 'ai-back': [0.5, 0.3, 0.5, 0.44], 'ai-front-alt': [0.5, 0.27, 0.47, 0.46] },
+  'crew-sweatshirt': { 'ai-front': [0.5, 0.27, 0.48, 0.46], 'ai-back': [0.5, 0.25, 0.48, 0.46], 'ai-front-alt': [0.5, 0.32, 0.5, 0.42] },
 };
+export const AI_VIEWS = ['ai-front', 'ai-front-alt', 'ai-back'];
 export const AI_VIEW = 'ai-front';
+export const isAiView = (view) => AI_VIEWS.includes(view);
 
 // Gildan 2000 reuses the Gildan 5000 photos and placements (owner instruction).
 const alias = { 'ultra-cotton-tee': 'heavy-cotton-tee' };
@@ -131,14 +133,9 @@ const parts = (position) => (position === 'Front + back' ? ['Front', 'Back'] : [
 export function boxesFor(slug, view, position) {
   const key = garmentKey(slug);
   const r = rules[key];
-  if (view === AI_VIEW) {
-    const ai = aiAnchors[slug];
-    if (!ai || !r) return [];
-    return parts(position).flatMap((p) => {
-      const e = ai.exact[p];
-      if (e) return [{ x: e[0], y: e[1], w: e[2], h: e[3] }];
-      return boxFrom(ai.a, r[p], view);
-    });
+  if (isAiView(view)) {
+    const a = aiAnchors[slug]?.[view];
+    return a && r ? parts(position).flatMap((p) => boxFrom(a, r[p], view)) : [];
   }
   const a = anchors[key]?.[view];
   if (!a || !r) return [];
@@ -154,15 +151,23 @@ function boxFrom([cx, yn, ya, w], rule, view) {
 export const leadView = (position) =>
   (/back/i.test(position) && !/front/i.test(position) ? 'model-back' : 'model-front');
 
-// Can the AI model photo show this colour + position with this logo?
-// The EMBLARA version has the logo baked in at one placement; any other
-// placement, or a visitor's own logo, needs the blank (no-logo) version.
-export function aiUsable(product, colour, position, emblaraMode) {
-  const ai = product.ai;
-  if (!ai || colour !== ai.colour || sideOf(leadView(position)) === 'back') return false;
-  return Boolean(ai.blank) || (emblaraMode && position === ai.position);
+// The AI photo file for a product, colour and view, or null.
+export const aiShot = (product, colour, view) => product.ai?.shots?.[colour]?.[view] ?? null;
+
+// Gelato stand-in when there is no AI photo for that colour and view.
+export const fallbackView = (view) => (view === 'ai-back' ? 'model-back' : view.startsWith('ai-') ? 'model-front' : view);
+
+// Views a product page shows for a colour: the AI model photos first (back
+// replaced by the Gelato back when that colour has no AI back), then the flats.
+export function viewsFor(product, colour) {
+  const front = aiShot(product, colour, 'ai-front') ? ['ai-front'] : ['model-front'];
+  const alt = aiShot(product, colour, 'ai-front-alt') ? ['ai-front-alt'] : [];
+  const back = aiShot(product, colour, 'ai-back') ? ['ai-back'] : ['model-back'];
+  return [...front, ...alt, ...back, 'flat-front', 'flat-back'];
 }
 
-// Views a product page can show, AI photo first when it fits.
-export const viewsFor = (product, colour, position, emblaraMode) =>
-  (aiUsable(product, colour, position, emblaraMode) ? [AI_VIEW, ...VIEWS] : VIEWS);
+// The view to open on for a position: the back for back-only positions.
+export const viewForPosition = (product, colour, position) => {
+  const views = viewsFor(product, colour);
+  return leadView(position) === 'model-back' ? views.find((v) => v.endsWith('back')) : views[0];
+};

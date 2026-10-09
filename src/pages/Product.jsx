@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { bySlug, categories, defaultPosition, products } from '../data/products.js';
 import { breaks, deliveryNote } from '../data/site.js';
-import { AI_VIEW, leadView, viewsFor } from '../data/placements.js';
+import { AI_VIEW, viewForPosition, viewsFor } from '../data/placements.js';
 import { useCart } from '../store/cart.jsx';
 import { useLogo } from '../store/logo.jsx';
 import { breakIndex, gbp } from '../lib/utils.js';
 import { methodOf, singleQuote, unitPrice } from '../lib/pricing.js';
 import { Mark, ProductCard, ProductImage } from '../components/ui.jsx';
 
-const VIEW_LABELS = { [AI_VIEW]: 'On our model', 'model-front': 'On model, front', 'model-back': 'On model, back', 'flat-front': 'Flat, front', 'flat-back': 'Flat, back' };
+const VIEW_LABELS = { [AI_VIEW]: 'On our model, front', 'ai-front-alt': 'On our second model', 'ai-back': 'On our model, back', 'model-front': 'On model, front', 'model-back': 'On model, back', 'flat-front': 'Flat, front', 'flat-back': 'Flat, back' };
 
 export default function Product({ slug }) {
   const product = bySlug[slug];
@@ -89,13 +89,15 @@ function ProductView({ product }) {
   const unit = lineTotal / qty;
   const active = breakIndex(qty);
 
-  // Front positions open on the AI model photo when it fits, back ones on the back.
+  // Front positions open on the model's front, back positions on the back.
   const pickPosition = (label) => {
     setPosition(label);
-    setView(leadView(label) === 'model-back' ? 'model-back' : AI_VIEW);
+    setView(viewForPosition(product, colour, label));
   };
-  const views = viewsFor(product, colour, position, !(mode === 'custom' && custom));
-  const shown = views.includes(view) ? view : views[0];
+  const views = viewsFor(product, colour);
+  // A colour may lack the AI back (or front): keep the same side when it does.
+  const twin = { 'ai-back': 'model-back', 'model-back': 'ai-back', 'ai-front': 'model-front', 'model-front': 'ai-front', 'ai-front-alt': 'ai-front' };
+  const shown = views.includes(view) ? view : views.includes(twin[view]) ? twin[view] : views[0];
 
   const pickMethod = (id) => {
     const next = methodOf(product, id);

@@ -46,13 +46,13 @@ export const statement = [
 
 // Editorial row: col = start column, span = width (12-column grid),
 // drop = vertical offset in rem, speed = parallax distance in px.
-// Each item shows the product's AI model shot (its own colour and logo position).
+// AI model photos: view and logo position per item (colour = the product's own).
 export const gallery = [
-  { slug: 'logo-hoodie', caption: 'Hoodie — front print', col: 1, span: 3, drop: 6, speed: -50 },
-  { slug: 'womens-polo', caption: 'Women’s polo — left chest', col: 4, span: 3, drop: 0, speed: 30 },
-  { slug: 'organic-polo', caption: 'Organic polo — left chest', col: 7, span: 2, drop: 10, speed: -70 },
-  { slug: 'heavy-cotton-tee', caption: 'Heavy cotton tee — front print', col: 9, span: 2, drop: 3, speed: -20 },
-  { slug: 'crew-sweatshirt', caption: 'Sweatshirt — left chest', col: 11, span: 2, drop: 8, speed: 40 },
+  { slug: 'logo-hoodie', view: 'ai-back', position: 'Back', caption: 'Hoodie — back print', col: 1, span: 3, drop: 6, speed: -50 },
+  { slug: 'womens-polo', view: 'ai-front', position: 'Left chest', caption: 'Women’s polo — left chest', col: 4, span: 3, drop: 0, speed: 30 },
+  { slug: 'mens-polo', view: 'ai-back', position: 'Large back', caption: 'Men’s polo — large back', col: 7, span: 2, drop: 10, speed: -70 },
+  { slug: 'heavy-cotton-tee', view: 'ai-front-alt', position: 'Front', caption: 'Heavy cotton tee — front print', col: 9, span: 2, drop: 3, speed: -20 },
+  { slug: 'crew-sweatshirt', view: 'ai-front', position: 'Left chest', caption: 'Sweatshirt — left chest', col: 11, span: 2, drop: 8, speed: 40 },
 ];
 
 export const process = [

@@ -4,63 +4,166 @@
     "method": "embroidery",
     "position": "Left chest",
     "model": "02-White-Male",
-    "emblara": "/garments/mens-polo/royal-blue-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "Royal Blue": {
+        "ai-front": "/garments/mens-polo/royal-blue-ai-front.webp",
+        "ai-back": "/garments/mens-polo/royal-blue-ai-back.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/mens-polo/black-ai-front.webp"
+      },
+      "White": {
+        "ai-front": "/garments/mens-polo/white-ai-front.webp"
+      },
+      "Pure Grey": {
+        "ai-front": "/garments/mens-polo/pure-grey-ai-front.webp"
+      }
+    }
   },
   "womens-polo": {
     "colour": "French Navy",
     "method": "embroidery",
     "position": "Left chest",
     "model": "01-White-Female",
-    "emblara": "/garments/womens-polo/french-navy-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "French Navy": {
+        "ai-front": "/garments/womens-polo/french-navy-ai-front.webp",
+        "ai-back": "/garments/womens-polo/french-navy-ai-back.webp"
+      },
+      "White": {
+        "ai-front": "/garments/womens-polo/white-ai-front.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/womens-polo/black-ai-front.webp"
+      }
+    }
   },
   "organic-polo": {
     "colour": "Black",
     "method": "embroidery",
     "position": "Left chest",
     "model": "03-Black-Male",
-    "emblara": "/garments/organic-polo/black-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "Black": {
+        "ai-front": "/garments/organic-polo/black-ai-front.webp",
+        "ai-back": "/garments/organic-polo/black-ai-back.webp"
+      },
+      "White": {
+        "ai-front": "/garments/organic-polo/white-ai-front.webp"
+      }
+    }
   },
   "printed-polo": {
     "colour": "Grey Melange",
     "method": "print",
     "position": "Front",
     "model": "02-White-Male",
-    "emblara": "/garments/printed-polo/grey-melange-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "Grey Melange": {
+        "ai-front": "/garments/printed-polo/grey-melange-ai-front.webp",
+        "ai-back": "/garments/printed-polo/grey-melange-ai-back.webp"
+      },
+      "Navy": {
+        "ai-front": "/garments/printed-polo/navy-ai-front.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/printed-polo/black-ai-front.webp"
+      },
+      "White": {
+        "ai-front": "/garments/printed-polo/white-ai-front.webp"
+      }
+    }
   },
   "heavy-cotton-tee": {
     "colour": "White",
     "method": "print",
     "position": "Front",
     "model": "02-White-Male",
-    "emblara": "/garments/heavy-cotton-tee/white-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "White": {
+        "ai-front": "/garments/heavy-cotton-tee/white-ai-front.webp",
+        "ai-back": "/garments/heavy-cotton-tee/white-ai-back.webp",
+        "ai-front-alt": "/garments/heavy-cotton-tee/white-ai-front-alt.webp"
+      },
+      "Navy": {
+        "ai-front": "/garments/heavy-cotton-tee/navy-ai-front.webp"
+      },
+      "Sport Grey": {
+        "ai-front": "/garments/heavy-cotton-tee/sport-grey-ai-front.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/heavy-cotton-tee/black-ai-front.webp"
+      }
+    },
+    "altModel": "01-White-Female"
   },
   "ultra-cotton-tee": {
     "colour": "Sport Grey",
     "method": "print",
     "position": "Front",
     "model": "03-Black-Male",
-    "emblara": "/garments/ultra-cotton-tee/sport-grey-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "Sport Grey": {
+        "ai-front": "/garments/ultra-cotton-tee/sport-grey-ai-front.webp",
+        "ai-back": "/garments/ultra-cotton-tee/sport-grey-ai-back.webp",
+        "ai-front-alt": "/garments/ultra-cotton-tee/sport-grey-ai-front-alt.webp"
+      },
+      "White": {
+        "ai-front": "/garments/ultra-cotton-tee/white-ai-front.webp"
+      },
+      "Navy": {
+        "ai-front": "/garments/ultra-cotton-tee/navy-ai-front.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/ultra-cotton-tee/black-ai-front.webp"
+      }
+    },
+    "altModel": "01-White-Female"
   },
   "logo-hoodie": {
     "colour": "Navy",
     "method": "print",
     "position": "Front",
     "model": "01-White-Female",
-    "emblara": "/garments/logo-hoodie/navy-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "Navy": {
+        "ai-front": "/garments/logo-hoodie/navy-ai-front.webp",
+        "ai-back": "/garments/logo-hoodie/navy-ai-back.webp",
+        "ai-front-alt": "/garments/logo-hoodie/navy-ai-front-alt.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/logo-hoodie/black-ai-front.webp"
+      },
+      "White": {
+        "ai-front": "/garments/logo-hoodie/white-ai-front.webp"
+      },
+      "Sport Grey": {
+        "ai-front": "/garments/logo-hoodie/sport-grey-ai-front.webp"
+      }
+    },
+    "altModel": "02-White-Male"
   },
   "crew-sweatshirt": {
     "colour": "Sport Grey",
     "method": "embroidery",
     "position": "Left chest",
     "model": "03-Black-Male",
-    "emblara": "/garments/crew-sweatshirt/sport-grey-ai-front-emblara.webp",
-    "blank": null
+    "shots": {
+      "Sport Grey": {
+        "ai-front": "/garments/crew-sweatshirt/sport-grey-ai-front.webp",
+        "ai-back": "/garments/crew-sweatshirt/sport-grey-ai-back.webp",
+        "ai-front-alt": "/garments/crew-sweatshirt/sport-grey-ai-front-alt.webp"
+      },
+      "Navy": {
+        "ai-front": "/garments/crew-sweatshirt/navy-ai-front.webp"
+      },
+      "White": {
+        "ai-front": "/garments/crew-sweatshirt/white-ai-front.webp"
+      },
+      "Black": {
+        "ai-front": "/garments/crew-sweatshirt/black-ai-front.webp"
+      }
+    },
+    "altModel": "01-White-Female"
   }
 }
