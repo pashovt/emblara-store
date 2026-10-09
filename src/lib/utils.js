@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
@@ -17,6 +17,41 @@ export const motionOK = () =>
 export const breakIndex = (qty) => breaks.reduce((hit, b, i) => (qty >= b.min ? i : hit), 0);
 
 // Pricing itself lives in pricing.js (order-level, most expensive item sets delivery).
+
+// ---------- theme ----------
+// 'system' follows the browser; 'light' / 'dark' are the visitor's choice,
+// remembered in this browser. index.html applies it before first paint.
+const THEME_KEY = 'emblara-theme';
+
+const readTheme = () => {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === 'light' || t === 'dark' ? t : 'system';
+  } catch {
+    return 'system';
+  }
+};
+
+export function useTheme() {
+  const [theme, setThemeState] = useState(readTheme);
+  useEffect(() => {
+    const onChange = (e) => setThemeState(e.detail);
+    window.addEventListener('emblara-theme', onChange);
+    return () => window.removeEventListener('emblara-theme', onChange);
+  }, []);
+  const setTheme = useCallback((t) => {
+    try {
+      if (t === 'system') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, t);
+    } catch {
+      /* not remembered, still applied */
+    }
+    if (t === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    window.dispatchEvent(new CustomEvent('emblara-theme', { detail: t }));
+  }, []);
+  return [theme, setTheme];
+}
 
 // ---------- hash router ----------
 // Routes: #/ (home), #/shop, #/shop/<category>, #/product/<slug>, #/checkout,

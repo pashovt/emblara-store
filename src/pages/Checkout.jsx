@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { imagesFor } from '../data/products.js';
+import { leadView } from '../data/placements.js';
 import { deliveryNote } from '../data/site.js';
 import { totalsFor, useCart } from '../store/cart.jsx';
 import { gbp, scrollToY } from '../lib/utils.js';
@@ -187,7 +187,7 @@ export default function Checkout() {
             {totals.lines.map((l) => (
               <li key={l.id}>
                 <div className="summary__img">
-                  <ProductImage product={l.product} src={imagesFor(l.product, l.colour)[0]} />
+                  <ProductImage product={l.product} colour={l.colour} position={l.position} view={leadView(l.position ?? '')} />
                   <span className="summary__qty">{l.qty}</span>
                 </div>
                 <div>

@@ -3,8 +3,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { marquee, statement, gallery, process } from '../data/site.js';
 import TryOnHero from '../components/TryOnHero.jsx';
-import { products } from '../data/products.js';
-import { Marquee, ProductCard, ThreadLines } from '../components/ui.jsx';
+import { bySlug, products } from '../data/products.js';
+import { Garment, Marquee, ProductCard, ThreadLines } from '../components/ui.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -104,7 +104,7 @@ export default function Home() {
           <h2 id="featured-title" className="h2">
             Kit for <em>every</em> team.
           </h2>
-          <a className="pill pill--ghost-dark" href="#/shop">View all {products.length} products</a>
+          <a className="pill pill--ghost-dark" href="#/shop">View the full range</a>
         </div>
         <div className="grid">
           {featured.map((p) => (
@@ -124,9 +124,9 @@ export default function Home() {
         </blockquote>
         <div className="gallery__row">
           {gallery.map((g) => (
-            <a key={g.image} className="gallery__item" href={`#/product/${g.slug}`} style={{ '--col': g.col, '--span': g.span, '--drop': `${g.drop}rem` }} data-speed={g.speed}>
+            <a key={g.caption} className="gallery__item" href={`#/product/${g.slug}`} style={{ '--col': g.col, '--span': g.span, '--drop': `${g.drop}rem` }} data-speed={g.speed}>
               <span className="gallery__cap">{g.caption}</span>
-              <img src={g.image} alt={`${g.caption} (illustrative)`} width="1000" height="1000" loading="lazy" />
+              <Garment product={bySlug[g.slug]} colour={g.colour} view={g.view} position={g.position} />
             </a>
           ))}
         </div>

@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { bySlug, categories, imagesFor, products } from '../data/products.js';
+import { bySlug, categories, products } from '../data/products.js';
 import { breaks, deliveryNote } from '../data/site.js';
+import { VIEWS, leadView } from '../data/placements.js';
 import { useCart } from '../store/cart.jsx';
+import { useLogo } from '../store/logo.jsx';
 import { breakIndex, gbp } from '../lib/utils.js';
 import { methodOf, singleQuote, unitPrice } from '../lib/pricing.js';
-import { ProductCard, ProductImage } from '../components/ui.jsx';
+import { Mark, ProductCard, ProductImage } from '../components/ui.jsx';
+
+const VIEW_LABELS = { 'model-front': 'On model, front', 'model-back': 'On model, back', 'flat-front': 'Flat, front', 'flat-back': 'Flat, back' };
 
 export default function Product({ slug }) {
   const product = bySlug[slug];
@@ -16,18 +20,66 @@ export default function Product({ slug }) {
       </div>
     );
   }
-  return <ProductView key={product.slug} product={product} />;
+  return product.service ? <ServiceView key={product.slug} product={product} /> : <ProductView key={product.slug} product={product} />;
+}
+
+function Crumbs({ product }) {
+  const categoryLabel = categories.find((c) => c.id === product.category)?.label ?? 'Range';
+  return (
+    <nav className="crumbs" aria-label="Breadcrumb">
+      <a href="#/shop">Shop</a>
+      <span aria-hidden="true">/</span>
+      <a href={`#/shop/${product.category}`}>{categoryLabel}</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{product.name}</span>
+    </nav>
+  );
+}
+
+function Related({ product }) {
+  const garments = products.filter((p) => !p.service && p.slug !== product.slug);
+  const related = [...garments.filter((p) => p.category === product.category), ...garments.filter((p) => p.category !== product.category)].slice(0, 4);
+  return (
+    <section className="related" aria-labelledby="related-title">
+      <h2 id="related-title" className="h3">Complete the kit</h2>
+      <div className="grid grid--4">
+        {related.map((p) => <ProductCard key={p.slug} product={p} />)}
+      </div>
+    </section>
+  );
+}
+
+// Logo status on the product page: which logo the preview uses, and a way to change it.
+function LogoChoice() {
+  const { mode, custom, setPanelOpen } = useLogo();
+  return (
+    <div className="opt opt--logo">
+      <p className="opt__label">Your logo</p>
+      <div className="logo-choice">
+        <span className="logo-choice__thumb" aria-hidden="true">
+          {mode === 'custom' && custom ? <img src={custom.src} alt="" /> : <Mark />}
+        </span>
+        <span className="logo-choice__text">
+          {mode === 'custom' && custom ? <>Previewing <strong>{custom.name}</strong></> : 'Previewing with the EMBLARA logo'}
+        </span>
+        <button type="button" className="pill pill--ghost-dark" onClick={() => setPanelOpen(true)}>
+          {custom ? 'Change logo' : 'Upload your logo'}
+        </button>
+      </div>
+      <p className="opt__hint">Your logo stays in this browser. We use the same file for your proof after you order.</p>
+    </div>
+  );
 }
 
 function ProductView({ product }) {
   const { add } = useCart();
-  const [image, setImage] = useState(0);
+  const { mode, custom } = useLogo();
   const [methodId, setMethodId] = useState(product.methods[0].id);
   const [colour, setColour] = useState(product.colours[0].name);
   const [size, setSize] = useState('');
   const [position, setPosition] = useState(product.methods[0].positions[0].label);
+  const [view, setView] = useState(leadView(product.methods[0].positions[0].label));
   const [qty, setQty] = useState(1);
-  const [logoName, setLogoName] = useState('');
   const [error, setError] = useState('');
 
   const method = methodOf(product, methodId);
@@ -37,19 +89,15 @@ function ProductView({ product }) {
   const unit = lineTotal / qty;
   const active = breakIndex(qty);
 
-  const shots = imagesFor(product, colour);
-  const ownPhoto = Boolean(product.colourImages?.[colour]);
-  const previewNote = shots.length && !ownPhoto ? `Preview shown in ${product.previewColour}. The ${colour} photo is coming soon.` : '';
-  const gallery = shots.length ? shots : [null];
-  const categoryLabel = categories.find((c) => c.id === product.category)?.label ?? 'Range';
-
-  const sameCategory = products.filter((p) => p.category === product.category && p.slug !== product.slug);
-  const related = [...sameCategory, ...products.filter((p) => p.category !== product.category && p.slug !== product.slug)].slice(0, 4);
+  const pickPosition = (label) => {
+    setPosition(label);
+    setView(leadView(label));
+  };
 
   const pickMethod = (id) => {
     const next = methodOf(product, id);
     setMethodId(id);
-    setPosition(next.positions[0].label);
+    pickPosition(next.positions[0].label);
     if (!next.sizes.some((s) => s.label === size)) setSize('');
   };
 
@@ -61,35 +109,28 @@ function ProductView({ product }) {
       return;
     }
     setError('');
-    add({ slug: product.slug, method: methodId, colour, size, position, qty, logoName });
+    add({ slug: product.slug, method: methodId, colour, size, position, qty, logoName: mode === 'custom' && custom ? custom.name : '' });
   };
 
   return (
     <div className="page page--product">
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <a href="#/shop">Shop</a>
-        <span aria-hidden="true">/</span>
-        <a href={`#/shop/${product.category}`}>{categoryLabel}</a>
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">{product.name}</span>
-      </nav>
+      <Crumbs product={product} />
 
       <div className="pdp">
         <div className="pdp__gallery">
-          <div className="pdp__main">
-            <ProductImage product={product} src={gallery[Math.min(image, gallery.length - 1)]} />
-            <span className="pdp__illustrative">Illustrative image</span>
-          </div>
-          {gallery.length > 1 && (
-            <div className="pdp__thumbs" role="group" aria-label="Product images">
-              {gallery.map((src, i) => (
-                <button key={src} type="button" className="pdp__thumb" aria-pressed={i === image} onClick={() => setImage(i)} aria-label={`Show image ${i + 1}`}>
-                  <ProductImage product={product} src={src} />
+          <div className="pdp__stage">
+            <div className="pdp__thumbs" role="group" aria-label="Product views">
+              {VIEWS.map((v) => (
+                <button key={v} type="button" className="pdp__thumb" aria-pressed={v === view} onClick={() => setView(v)} aria-label={VIEW_LABELS[v]}>
+                  <ProductImage product={product} colour={colour} view={v} position={position} />
                 </button>
               ))}
             </div>
-          )}
-          {previewNote && <p className="opt__hint">{previewNote}</p>}
+            <div className="pdp__main">
+              <ProductImage product={product} colour={colour} view={view} position={position} eager />
+              <span className="pdp__illustrative">Illustrative image</span>
+            </div>
+          </div>
         </div>
 
         <form className="pdp__info" onSubmit={onAdd} noValidate>
@@ -119,7 +160,7 @@ function ProductView({ product }) {
             <div className="opt__row">
               {product.colours.map((c) => (
                 <label key={c.name} className="swatch" title={c.name}>
-                  <input type="radio" name="colour" value={c.name} checked={colour === c.name} onChange={() => { setColour(c.name); setImage(0); }} />
+                  <input type="radio" name="colour" value={c.name} checked={colour === c.name} onChange={() => setColour(c.name)} />
                   <span style={{ background: c.hex }} />
                   <em className="visually-hidden">{c.name}</em>
                 </label>
@@ -142,22 +183,18 @@ function ProductView({ product }) {
           </fieldset>
 
           <fieldset className="opt">
-            <legend>Logo position</legend>
+            <legend>Logo position <span>{position}</span></legend>
             <div className="opt__row">
               {method.positions.map((p) => (
                 <label key={p.label} className="chip">
-                  <input type="radio" name="position" value={p.label} checked={position === p.label} onChange={() => setPosition(p.label)} />
+                  <input type="radio" name="position" value={p.label} checked={position === p.label} onChange={() => pickPosition(p.label)} />
                   <span>{p.label}{p.add ? ` +${gbp(p.add)}` : ''}</span>
                 </label>
               ))}
             </div>
           </fieldset>
 
-          <div className="opt opt--logo">
-            <label htmlFor="logo-file">Your logo <span>(optional now)</span></label>
-            <input id="logo-file" type="file" accept=".png,.jpg,.jpeg,.svg,.pdf,.ai,.eps" onChange={(e) => setLogoName(e.target.files?.[0]?.name ?? '')} aria-describedby="logo-hint" />
-            <p className="opt__hint" id="logo-hint">Demo only: the file stays on your device. Vector (SVG, PDF, AI, EPS) or a large transparent PNG works best.</p>
-          </div>
+          <LogoChoice />
 
           <div className="pdp__buy">
             <div className="stepper stepper--lg" aria-label="Quantity">
@@ -201,14 +238,41 @@ function ProductView({ product }) {
         </form>
       </div>
 
-      {related.length > 0 && (
-        <section className="related" aria-labelledby="related-title">
-          <h2 id="related-title" className="h3">Complete the kit</h2>
-          <div className="grid grid--4">
-            {related.map((p) => <ProductCard key={p.slug} product={p} />)}
+      <Related product={product} />
+    </div>
+  );
+}
+
+function ServiceView({ product }) {
+  const { add } = useCart();
+  const { custom, setPanelOpen } = useLogo();
+  return (
+    <div className="page page--product">
+      <Crumbs product={product} />
+      <div className="pdp">
+        <div className="pdp__gallery pdp__gallery--single">
+          <div className="pdp__main">
+            <ProductImage product={product} />
           </div>
-        </section>
-      )}
+        </div>
+        <div className="pdp__info">
+          <p className="eyebrow">{product.method}</p>
+          <h1 className="pdp__title">{product.name}</h1>
+          <p className="pdp__price">{gbp(product.price)} <span>per logo</span></p>
+          <p className="pdp__blurb">{product.blurb}</p>
+          <ul className="service-list">{product.specs.map((s) => <li key={s}>{s}</li>)}</ul>
+          <p className="opt__hint">
+            {custom ? <>We’ll start from <strong>{custom.name}</strong>, the logo you added in this browser.</> : 'Add your logo now or send it after ordering.'}{' '}
+            <button type="button" className="link-button" onClick={() => setPanelOpen(true)}>{custom ? 'Change logo' : 'Add your logo'}</button>
+          </p>
+          <div className="pdp__buy">
+            <button type="button" className="pill pill--copper pill--lg pdp__add" onClick={() => add({ slug: product.slug, method: 'service', qty: 1, logoName: custom?.name ?? '' })}>
+              Add to bag · {gbp(product.price)}
+            </button>
+          </div>
+        </div>
+      </div>
+      <Related product={product} />
     </div>
   );
 }

@@ -1,4 +1,7 @@
 import { gbp } from '../lib/utils.js';
+import { defaultPosition } from '../data/products.js';
+import { boxesFor, garmentKey } from '../data/placements.js';
+import { useLogo } from '../store/logo.jsx';
 
 // ---------- brand mark ----------
 const TOP = 'M760 7 L260 7 L5 255 L80 333 L305 113 L650 113 Z';
@@ -45,57 +48,86 @@ export function Marquee({ items, reverse = false, className = '' }) {
   );
 }
 
-// ---------- product image or labelled placeholder ----------
-export function ProductImage({ product, index = 0, className = '', sizes, src: override }) {
-  const src = override ?? product.images[index];
-  if (src) {
-    return (
+// ---------- garment photo with the logo drawn on ----------
+// Photos are clean Gelato previews; the logo (EMBLARA or the visitor's own) is
+// placed in the decoration area for the chosen position. See placements.js.
+const kebab = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const pct = (n) => `${(n * 100).toFixed(2)}%`;
+
+export const garmentSrc = (product, colour, view) => `/garments/${garmentKey(product.slug)}/${kebab(colour)}-${view}.webp`;
+
+export function Garment({ product, colour, view = 'model-front', position, className = '', alt, eager = false }) {
+  const { artFor } = useLogo();
+  const c = product.colours.find((x) => x.name === colour) ?? product.colours[0];
+  const boxes = boxesFor(product.slug, view, position ?? defaultPosition(product));
+  const art = artFor(c.hex);
+  const logoNote = art.kind === 'custom' ? 'your logo' : 'the EMBLARA logo';
+  return (
+    <div className={`garment ${className}`}>
       <img
-        className={`pimg ${className}`}
-        src={src}
-        alt={`${product.name} with the EMBLARA logo (illustrative image)`}
+        className="garment__photo"
+        src={garmentSrc(product, c.name, view)}
+        alt={alt ?? `${product.name} in ${c.name} with ${logoNote} (illustrative)`}
         width="1000"
         height="1000"
-        loading="lazy"
+        loading={eager ? 'eager' : 'lazy'}
         decoding="async"
-        sizes={sizes}
+        draggable="false"
       />
-    );
-  }
-  return (
-    <div className={`pimg pimg--placeholder ${className}`} role="img" aria-label={`${product.name} — photo coming soon`}>
-      <ThreadLines />
-      <Mark className="pimg__mark" />
-      <span className="pimg__name">{product.name}</span>
-      <span className="pimg__note">Photo coming soon</span>
+      {boxes.map((b) => (
+        <span
+          key={`${b.x}-${b.y}`}
+          className={`garment__logo${art.darkGarment ? ' garment__logo--on-dark' : ''}`}
+          style={{ left: pct(b.x - b.w / 2), top: pct(b.y - b.h / 2), width: pct(b.w), height: pct(b.h) }}
+          aria-hidden="true"
+        >
+          {art.kind === 'custom' ? <img src={art.src} alt="" draggable="false" /> : <Mark className="garment__mark" />}
+        </span>
+      ))}
     </div>
   );
+}
+
+// ---------- product image: garment photo, or a tile for services ----------
+export function ProductImage({ product, colour, view, position, className = '', eager }) {
+  if (product.service) {
+    return (
+      <div className={`pimg pimg--placeholder ${className}`} role="img" aria-label={product.name}>
+        <ThreadLines />
+        <Mark className="pimg__mark" />
+        <span className="pimg__name">{product.name}</span>
+        <span className="pimg__note">Done by our team</span>
+      </div>
+    );
+  }
+  return <Garment product={product} colour={colour} view={view} position={position} className={className} eager={eager} />;
 }
 
 // ---------- product card ----------
 export function ProductCard({ product }) {
   return (
     <a className="card" href={`#/product/${product.slug}`}>
-      <div className={`card__media${product.images[1] ? ' card__media--swap' : ''}`}>
+      <div className={`card__media${product.service ? '' : ' card__media--swap'}`}>
         <ProductImage product={product} />
-        {product.images[1] && <ProductImage product={product} index={1} className="card__alt" />}
+        {!product.service && <ProductImage product={product} view="flat-front" className="card__alt" />}
         {product.badge && <span className="card__badge">{product.badge}</span>}
       </div>
       <div className="card__body">
         <div className="card__row">
           <h3 className="card__name">{product.name}</h3>
           <span className="card__price">
-            <span className="card__from">from</span> {gbp(product.price)}
+            {!product.service && <span className="card__from">from</span>} {gbp(product.price)}
           </span>
         </div>
         <div className="card__row card__row--meta">
           <span className="card__method">{product.method}</span>
-          <span className="card__dots" aria-label={`${product.colours.length} colours`}>
-            {product.colours.slice(0, 6).map((c) => (
-              <i key={c.name} style={{ background: c.hex }} />
-            ))}
-            {product.colours.length > 6 && <em>+{product.colours.length - 6}</em>}
-          </span>
+          {product.colours.length > 0 && (
+            <span className="card__dots" aria-label={`${product.colours.length} colours`}>
+              {product.colours.slice(0, 6).map((c) => (
+                <i key={c.name} style={{ background: c.hex }} />
+              ))}
+            </span>
+          )}
         </div>
       </div>
     </a>

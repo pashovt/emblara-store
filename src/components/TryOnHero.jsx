@@ -4,7 +4,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { tryon } from '../data/site.js';
 import { bySlug } from '../data/products.js';
 import { gbp, motionOK, scrollToY } from '../lib/utils.js';
-import { ThreadLines } from './ui.jsx';
+import { Garment, ThreadLines } from './ui.jsx';
+import { useLogo } from '../store/logo.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,6 +18,7 @@ const DESKTOP = '(min-width: 960px) and (prefers-reduced-motion: no-preference)'
 
 export default function TryOnHero() {
   const looks = tryon.looks;
+  const { mode, setPanelOpen } = useLogo();
   const n = looks.length;
   const root = useRef(null);
   const ring = useRef(null);
@@ -200,39 +202,33 @@ export default function TryOnHero() {
           ))}
         </h1>
         <p className="tryon__sub">{tryon.sub}</p>
+        <button type="button" className="pill pill--copper tryon__logo-cta" onClick={() => setPanelOpen(true)}>
+          {mode === 'custom' ? 'Change your logo' : 'See it with your logo'}
+        </button>
       </div>
 
       <div className="tryon__stage" onPointerDown={onPointerDown} onPointerUp={onPointerUp}>
         <div className="tryon__ring" ref={ring} aria-hidden="true">
           {looks.map((l, i) => (
-            <img
-              key={l.flat}
-              ref={(el) => { flats.current[i] = el; }}
-              className="tryon__flat"
-              src={l.flat}
-              alt=""
-              width="1000"
-              height="1000"
-              loading={i < 3 ? 'eager' : 'lazy'}
-              draggable="false"
-            />
+            <div key={`${l.slug}-${l.colour}`} ref={(el) => { flats.current[i] = el; }} className="tryon__flat">
+              <Garment product={bySlug[l.slug]} colour={l.colour} view="flat-front" position={l.position} alt="" eager={i < 3} />
+            </div>
           ))}
         </div>
 
         <div className="tryon__model">
           <div className="tryon__glow" aria-hidden="true" />
           {looks.map((l, i) => (
-            <img
-              key={l.model}
-              ref={(el) => { models.current[i] = el; }}
-              className="tryon__layer"
-              src={l.model}
-              alt={i === active ? `Model wearing the ${l.label} in ${l.colour} with the EMBLARA logo (illustrative)` : ''}
-              width="1000"
-              height="1000"
-              fetchPriority={i === 0 ? 'high' : 'auto'}
-              draggable="false"
-            />
+            <div key={`${l.slug}-${l.colour}`} ref={(el) => { models.current[i] = el; }} className="tryon__layer">
+              <Garment
+                product={bySlug[l.slug]}
+                colour={l.colour}
+                view="model-front"
+                position={l.position}
+                alt={i === active ? `Model wearing the ${l.label} in ${l.colour} with ${mode === 'custom' ? 'your logo' : 'the EMBLARA logo'} (illustrative)` : ''}
+                eager={i < 2}
+              />
+            </div>
           ))}
           <span className="tryon__scan" ref={scan} aria-hidden="true" />
         </div>
@@ -256,7 +252,7 @@ export default function TryOnHero() {
         <div className="tryon__dots">
           {looks.map((l, i) => (
             <button
-              key={l.model}
+              key={`${l.slug}-${l.colour}`}
               type="button"
               className="tryon__dot"
               aria-label={`${l.label}, ${l.colour}`}

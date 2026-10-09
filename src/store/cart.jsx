@@ -62,13 +62,17 @@ export const useCart = () => useContext(CartContext);
 // The whole bag is one order to one UK address: the price per piece falls as the
 // piece count rises, and delivery is charged at the rate of the most expensive
 // garment in the bag (see pricing.js). Delivery is inside the price.
+// Services (logo clean-up) have a fixed price and no delivery.
 export function totalsFor(items) {
-  const priced = quote(items.map((i) => ({ ...i, product: bySlug[i.slug] })));
-  const lines = items.map((i, n) => {
+  const garments = items.filter((i) => !bySlug[i.slug].service);
+  const priced = quote(garments.map((i) => ({ ...i, product: bySlug[i.slug] })));
+  const lines = items.map((i) => {
     const product = bySlug[i.slug];
-    const line = priced.lines[n];
+    if (product.service) return { ...i, product, methodLabel: product.method, unit: product.price, total: product.price * i.qty };
+    const line = priced.lines[garments.indexOf(i)];
     return { ...i, product, methodLabel: methodOf(product, i.method).label, unit: line.unit, total: line.total };
   });
+  const total = lines.reduce((sum, l) => sum + l.total, 0);
   const count = items.reduce((n, i) => n + i.qty, 0);
-  return { lines, subtotal: priced.total, total: priced.total, count, leadSlug: priced.lead };
+  return { lines, subtotal: total, total, count, leadSlug: priced.lead };
 }

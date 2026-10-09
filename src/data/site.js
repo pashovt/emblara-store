@@ -47,11 +47,11 @@ export const statement = [
 // Editorial row: col = start column, span = width (12-column grid),
 // drop = vertical offset in rem, speed = parallax distance in px.
 export const gallery = [
-  { image: '/products/hoodie-white-back.webp', caption: 'Hoodie — back logo', slug: 'logo-hoodie', col: 1, span: 3, drop: 6, speed: -50 },
-  { image: '/products/polo-womens-navy-model.webp', caption: 'Women’s polo — left chest', slug: 'womens-polo', col: 4, span: 3, drop: 0, speed: 30 },
-  { image: '/products/perfect-men-black-model.webp', caption: 'Men’s polo — left chest', slug: 'mens-polo', col: 7, span: 2, drop: 10, speed: -70 },
-  { image: '/products/spring-white-model.webp', caption: 'Printed polo — chest', slug: 'printed-polo', col: 9, span: 2, drop: 3, speed: -20 },
-  { image: '/products/sweat-white-front.webp', caption: 'Crew sweatshirt — left chest', slug: 'crew-sweatshirt', col: 11, span: 2, drop: 8, speed: 40 },
+  { slug: 'logo-hoodie', colour: 'White', view: 'model-back', position: 'Back', caption: 'Hoodie — back print', col: 1, span: 3, drop: 6, speed: -50 },
+  { slug: 'womens-polo', colour: 'French Navy', view: 'model-front', position: 'Left chest', caption: 'Women’s polo — left chest', col: 4, span: 3, drop: 0, speed: 30 },
+  { slug: 'mens-polo', colour: 'Black', view: 'model-front', position: 'Left chest', caption: 'Men’s polo — left chest', col: 7, span: 2, drop: 10, speed: -70 },
+  { slug: 'printed-polo', colour: 'White', view: 'model-back', position: 'Back', caption: 'Printed polo — back', col: 9, span: 2, drop: 3, speed: -20 },
+  { slug: 'crew-sweatshirt', colour: 'Sport Grey', view: 'model-front', position: 'Left chest', caption: 'Sweatshirt — left chest', col: 11, span: 2, drop: 8, speed: 40 },
 ];
 
 export const process = [
@@ -62,12 +62,9 @@ export const process = [
 ];
 
 // Try-on hero. Gelato "man2" previews: the pose is identical within each
-// garment type, so colour changes look like the garment sliding on.
-const look = (garment, colour, hex, slug, label) => ({
-  garment, colour: colour.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), hex, slug, label,
-  model: `/tryon/${garment}-${colour}-model.webp`,
-  flat: `/tryon/${garment}-${colour}-flat.webp`,
-});
+// garment type, so colour changes look like the garment sliding on. The logo
+// is drawn on live (EMBLARA or the visitor's own) at `position`.
+const look = (slug, colour, hex, label) => ({ slug, colour, hex, label, position: 'Left chest' });
 
 // Only colours the range actually offers: Navy, Sport Grey, Black, White.
 export const tryon = {
@@ -79,14 +76,14 @@ export const tryon = {
   ],
   sub: 'Scroll to put the next garment on. One logo, every colour, ready for the whole team.',
   looks: [
-    look('tee', 'navy', '#1d2840', 'heavy-cotton-tee', 'Heavy cotton tee'),
-    look('tee', 'sport-grey', '#9a9ea3', 'heavy-cotton-tee', 'Heavy cotton tee'),
-    look('tee', 'white', '#f5f5f2', 'heavy-cotton-tee', 'Heavy cotton tee'),
-    look('hoodie', 'black', '#121214', 'logo-hoodie', 'Logo hoodie'),
-    look('hoodie', 'navy', '#1d2840', 'logo-hoodie', 'Logo hoodie'),
-    look('hoodie', 'white', '#f5f5f2', 'logo-hoodie', 'Logo hoodie'),
-    look('sweat', 'sport-grey', '#9a9ea3', 'crew-sweatshirt', 'Crew sweatshirt'),
-    look('sweat', 'navy', '#1d2840', 'crew-sweatshirt', 'Crew sweatshirt'),
-    look('sweat', 'black', '#121214', 'crew-sweatshirt', 'Crew sweatshirt'),
+    look('heavy-cotton-tee', 'Navy', '#1d2840', 'Heavy cotton tee'),
+    look('heavy-cotton-tee', 'Sport Grey', '#9a9ea3', 'Heavy cotton tee'),
+    look('heavy-cotton-tee', 'White', '#f5f5f2', 'Heavy cotton tee'),
+    look('logo-hoodie', 'Black', '#121214', 'Logo hoodie'),
+    look('logo-hoodie', 'Navy', '#1d2840', 'Logo hoodie'),
+    look('logo-hoodie', 'White', '#f5f5f2', 'Logo hoodie'),
+    look('crew-sweatshirt', 'Sport Grey', '#9a9ea3', 'Crew sweatshirt'),
+    look('crew-sweatshirt', 'Navy', '#1d2840', 'Crew sweatshirt'),
+    look('crew-sweatshirt', 'Black', '#121214', 'Crew sweatshirt'),
   ],
 };

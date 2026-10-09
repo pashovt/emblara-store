@@ -20,6 +20,26 @@ Source of truth for prices: `05-Business-Plan/Pricing/Emblara-Pricing-Matrix.xls
 
 Pricing model (`src/lib/pricing.js`): order cost = 1.2 × (garments + shipping) + £4.95 per distinct embroidery location; price = (cost + £0.20) ÷ (1 − 20% − 1.5%), rounded up to the penny per piece. Gelato costs and shipping rates sit in `src/data/products.js`. "Most expensive garment" means the highest garment cost in the bag, which in this range is also the highest delivery rate.
 
+## Your logo on every garment (added 9 Oct 2026)
+
+- Visitors click **Add your logo** (header, hero, or the product page) and pick a PNG, SVG, JPG or WebP. Every garment on the site, from the hero to the bag, is then drawn with their logo. **EMBLARA logo** and **Your logo** stay as two options in the panel, so they can switch back.
+- In-browser clean-up (`src/lib/logo-clean.js`): removes a flat background from opaque files, trims empty space, and makes a light version for dark garments (and a dark one for light garments when the logo is very pale). Nothing is uploaded.
+- The logo is remembered in the visitor's browser storage (`localStorage`, key `emblara-logo-v1`), so it is still there on the next visit. Cookies hold only about 4 KB, which is too small for an image, so browser storage does the same job here. Clearing site data removes it.
+- Harder files point to the paid **Professional logo clean-up** item (`#/product/logo-clean-up`). **The £15 price is a placeholder: set the real one in `src/data/products.js`.**
+- Bag lines carry the logo file name, so the order shows which logo the customer previewed.
+
+## Photos and logo positions
+
+- **Photos:** `public/garments/<product>/<colour>-<view>.webp`, clean Gelato catalogue previews with **no logo baked in**, padded to 1000 × 1000. Views: `model-front`, `model-back`, `flat-front`, `flat-back`. Sources in `public/garments/sources.csv`. Re-download with `node scripts/fetch-garments.mjs`.
+- Gildan 2000 has no public Gelato preview; it reuses the Gildan 5000 photos, as the owner instructed for the shared front/back references.
+- **Logo positions:** `src/data/placements.js`. Each photo has four anchors (centre line, collar, armpit line, chest width). Each placement (left chest, large back, front print, etc.) is a box placed relative to those anchors, using the proportions of the owner's Gelato placement screenshots in `02-Listings/Gelato/01-Products/*/02-Print-Locations`. The women's polo left chest now sits level with the bottom of the placket, as Gelato places it.
+- Choosing a back position on a product page switches the gallery to the back view.
+- The owner's own Gelato mockups (with the Emblara logo baked in) stay in `02-Listings/Gelato` as references. The site no longer uses them, because a baked-in logo can't be swapped.
+
+## Theme
+
+Light, Dark or System (default: follows the browser). Switch in the header (desktop) or the footer. The choice is remembered in the browser (`emblara-theme`). The page declares `color-scheme: light dark`, so Chrome's forced dark mode no longer darkens it. The fitting-room hero and the gallery stay a lit studio in both themes, because their photos are blended onto the background.
+
 ## Range
 
 | Product | Gelato model | Finish | From (1 piece) |
@@ -43,9 +63,9 @@ Sizes and locations follow `02-Listings/Gelato/00-Option-Rules.csv`. Anything th
 - **Prices are planning figures.** The mixed-order shipping rule is the owner's reading of how Gelato charges; check it against a real mixed basket quote. Several delivery addresses are not modelled. One embroidery charge per distinct location is an assumption for mixed orders.
 - **Reused logos:** the £4.95 digitisation is inside the embroidery price. Whether a reorder avoids it is unconfirmed, so the site makes no promise about reorders.
 - **Delivery times** are not stated. The site says they are confirmed with the proof.
-- **Photos.** Every colour now has a photo except Ultra cotton tee in White, Navy and Black (the page says "Preview shown in Sport Grey"). Images are Gelato catalogue previews (`scripts-fetch-tryon.mjs`, `scripts-fetch-products.mjs`, logo added digitally) or the owner’s Gelato mockups (`scripts-owner-mockups.mjs`), all labelled illustrative.
+- **Photos** are Gelato catalogue previews, labelled illustrative. Replace them with sample photography when available (keep the four views and update the anchors in `placements.js`).
 - WoH can return as website supply only after a written agreement. Do not add WoH products or a partner credit before then.
-- Still to do for a real launch: payment provider, order emails, logo upload storage, privacy policy and terms, Clarity + UTM capture, and removing `noindex`.
+- Still to do for a real launch: payment provider, order emails, logo storage with the order (today it stays in the visitor's browser), privacy policy and terms, Clarity + UTM capture, and removing `noindex`.
 
 ## Try-on hero (`src/components/TryOnHero.jsx`)
 
@@ -53,7 +73,7 @@ Sizes and locations follow `02-Listings/Gelato/00-Option-Rules.csv`. Anything th
 - Scrolling (desktop, pinned) turns the ring. As the next garment reaches the centre, a copper scan line wipes the model into it.
 - Within one garment type the photo is pixel-identical apart from the clothing, so the change reads as the garment sliding on. Between types (tee, hoodie, sweatshirt) the model changes, because Gelato uses a different model per garment.
 - Arrows, colour dots, keyboard arrows and swipe also work. Phones: no pinning, auto-advances while visible. Reduced motion: instant switches, no scan line.
-- Looks are listed in `tryon` in `src/data/site.js`. All four colours (Navy, Sport Grey, Black, White) are downloaded; nine are in the hero.
+- Looks are listed in `tryon` in `src/data/site.js` (nine looks, logo at left chest). The logo is drawn live, so the hero shows the visitor's logo too.
 
 ## Run
 
@@ -69,8 +89,8 @@ Deploy anywhere static (Vercel preset: Vite, output `dist`). Routing uses `#/` h
 ## What's in it
 
 - **Home:** try-on hero; a copper running stitch sewn across a two-row marquee; a statement that lights up word by word; featured products; parallax gallery; how it works; mock-up call to action.
-- **Shop** (`#/shop`, `#/shop/<category>`): 8 products in Polos, T-shirts, and Hoodies & sweatshirts.
-- **Product pages** (`#/product/<slug>`): finish (printed or embroidered), colour with its own photos, size with surcharges, logo position, quantity, logo file (stays on device), a price-by-quantity table, fabric by colour, proof and returns info.
+- **Shop** (`#/shop`, `#/shop/<category>`): 8 garments in Polos, T-shirts, and Hoodies & sweatshirts, plus the logo clean-up service.
+- **Product pages** (`#/product/<slug>`): four views in a gallery with a thumbnail strip inside the image box; finish (printed or embroidered), colour, size with surcharges, logo position (moves the logo on the photos), your-logo control, quantity, a price-by-quantity table, fabric by colour, proof and returns info.
 - **Bag drawer:** quantities, whole-order pricing across items, sizes and colours, delivery-included note. Persists in localStorage (`emblara-bag-v2`).
 - **Checkout** (`#/checkout`): contact, UK address with validation, delivery-included card, logo handling, disabled payment block, order summary, demo confirmation.
 - Smooth scroll (Lenis) + GSAP ScrollTrigger. Reduced motion: no smooth scroll, pinning or animation.
@@ -83,8 +103,8 @@ Deploy anywhere static (Vercel preset: Vite, output `dist`). Routing uses `#/` h
 | Pricing rules and rates | `src/lib/pricing.js` |
 | Copy, price-break labels, gallery, try-on looks | `src/data/site.js` |
 | Colours, fonts, spacing | top of `src/styles/global.css` |
-| Images | `public/products/`, `public/tryon/` |
-| Rebuild owner-mockup images | `node scripts-owner-mockups.mjs` (reads `02-Listings/Gelato`) |
-| Re-download polo previews | `node scripts-fetch-products.mjs` |
-| Re-download try-on previews | `node scripts-fetch-tryon.mjs`, then `node scripts-logo-tryon.cjs` |
+| Garment photos | `public/garments/` (re-download: `node scripts/fetch-garments.mjs`) |
+| Logo positions | `src/data/placements.js` |
+| Logo upload, clean-up, storage | `src/store/logo.jsx`, `src/lib/logo-clean.js`, panel in `src/components/Chrome.jsx` |
+| Theme colours | "Themes" block at the end of `src/styles/global.css` |
 | Payment hook | `placeOrder()` in `src/pages/Checkout.jsx` |

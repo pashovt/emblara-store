@@ -8,8 +8,17 @@
     <meta name="theme-color" content="#0d1526" />
     <!-- Demo build: keep out of search engines. Review before a real launch. -->
     <meta name="robots" content="noindex, nofollow" />
+    <!-- Light and dark are both supported, so the browser must not force-darken the page. -->
+    <meta name="color-scheme" content="light dark" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preload" as="image" href="/tryon/tee-navy-model.webp" />
+    <link rel="preload" as="image" href="/garments/heavy-cotton-tee/navy-model-front.webp" />
+    <script>
+      // Apply the saved theme before first paint (no flash). "System" = no attribute.
+      try {
+        var t = localStorage.getItem('emblara-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

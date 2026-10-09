@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Header, CartDrawer, Footer } from './components/Chrome.jsx';
+import { Header, CartDrawer, Footer, LogoPanel } from './components/Chrome.jsx';
 import Home from './pages/Home.jsx';
 import Shop from './pages/Shop.jsx';
 import Product from './pages/Product.jsx';
@@ -47,6 +47,7 @@ export default function App() {
       </main>
       <Footer />
       <CartDrawer />
+      <LogoPanel />
     </>
   );
 }

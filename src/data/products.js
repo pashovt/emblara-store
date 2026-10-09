@@ -33,27 +33,19 @@ const printPositions = (both) => [opt('Front'), opt('Back'), opt('Front + back',
 const chestPositions = [opt('Left chest'), opt('Centre chest'), opt('Large chest')];
 const poloPositions = [opt('Left chest'), opt('Large back')];
 
-const shots = (...names) => names.map((n) => `/${n}.webp`);
-
 export const categories = [
   { id: 'all', label: 'All' },
   { id: 'polos', label: 'Polos' },
   { id: 'tees', label: 'T-shirts' },
   { id: 'sweats', label: 'Hoodies & sweatshirts' },
+  { id: 'services', label: 'Services' },
 ];
 
 export const products = [
   {
     slug: 'mens-polo', name: 'Men’s polo', category: 'polos',
     ship: { first: 3.42, extra: 0.97 },
-    previewColour: 'Black',
     colours: [C.black, C.white, C.pureGrey, C.royal],
-    colourImages: {
-      Black: shots('products/perfect-men-black-model'),
-      White: shots('products/mens-polo-white-model'),
-      'Pure Grey': shots('products/mens-polo-pure-grey-model'),
-      'Royal Blue': shots('products/mens-polo-royal-blue-model'),
-    },
     fabric: '100% combed ringspun cotton, 180 gsm',
     blurb: 'A fitted cotton polo with your logo stitched on the left chest. A smart everyday shirt for staff and teams.',
     specs: ['Men’s fitted cut', 'Embroidered logo, left chest or large back', 'Four colours', 'Sizes S to 3XL'],
@@ -69,13 +61,7 @@ export const products = [
   {
     slug: 'womens-polo', name: 'Women’s polo', category: 'polos',
     ship: { first: 3.42, extra: 0.97 },
-    previewColour: 'French Navy',
     colours: [C.frenchNavy, C.white, C.black],
-    colourImages: {
-      'French Navy': shots('products/polo-womens-navy-model'),
-      White: shots('products/womens-polo-white-model'),
-      Black: shots('products/womens-polo-black-model'),
-    },
     fabric: '100% combed ringspun cotton, 180 gsm',
     blurb: 'A shaped cotton polo for mixed teams, salons and front-of-house staff, with your logo embroidered on the left chest.',
     specs: ['Women’s fitted cut', 'Embroidered logo, left chest or large back', 'Three colours', 'Sizes S to L'],
@@ -91,12 +77,7 @@ export const products = [
   {
     slug: 'organic-polo', name: 'Organic cotton polo', category: 'polos',
     ship: { first: 3.42, extra: 0.97 },
-    previewColour: 'Black',
     colours: [C.black, C.white],
-    colourImages: {
-      Black: shots('products/organic-black-model'),
-      White: shots('products/organic-white-model'),
-    },
     fabric: '100% organically grown cotton',
     blurb: 'A polo in organically grown cotton, embroidered with your logo. For teams that want a lower-impact fabric.',
     specs: ['Men’s cut', 'Embroidered logo, left chest or large back', 'Two colours', 'Sizes S to 3XL'],
@@ -112,14 +93,7 @@ export const products = [
   {
     slug: 'printed-polo', name: 'Printed polo', category: 'polos',
     ship: { first: 3.42, extra: 0.97 },
-    previewColour: 'Navy',
     colours: [C.navy, C.black, C.white, C.greyMelange],
-    colourImages: {
-      Navy: shots('products/polo-pique-navy-model', 'products/polo-pique-navy-flat'),
-      Black: shots('products/polo-fotl-black-model'),
-      White: shots('products/spring-white-model'),
-      'Grey Melange': shots('products/spring-grey-melange-model'),
-    },
     fabric: '100% ringspun cotton piqué, 210 gsm',
     fabricByColour: { 'Grey Melange': '85% cotton / 15% viscose piqué, 210 gsm' },
     blurb: 'A cotton piqué polo with a full-colour print. Put the logo on the front, the back, or both.',
@@ -135,14 +109,7 @@ export const products = [
   {
     slug: 'heavy-cotton-tee', name: 'Heavy cotton tee', category: 'tees',
     ship: { first: 3.19, extra: 0.95 },
-    previewColour: 'Navy',
     colours: [C.navy, C.sportGrey, C.white, C.black],
-    colourImages: {
-      Navy: shots('tryon/tee-navy-model', 'tryon/tee-navy-flat'),
-      'Sport Grey': shots('tryon/tee-sport-grey-model', 'tryon/tee-sport-grey-flat'),
-      White: shots('tryon/tee-white-model', 'tryon/tee-white-flat'),
-      Black: shots('tryon/tee-black-model', 'tryon/tee-black-flat'),
-    },
     fabric: '100% cotton (preshrunk jersey knit)',
     fabricByColour: { 'Sport Grey': '90% cotton / 10% polyester' },
     blurb: 'A sturdy unisex crew-neck tee. Print it for the lowest price, or have the logo embroidered for a finish that lasts.',
@@ -163,9 +130,7 @@ export const products = [
   {
     slug: 'ultra-cotton-tee', name: 'Ultra cotton tee', category: 'tees',
     ship: { first: 2.8, extra: 0.79 },
-    previewColour: 'Sport Grey',
     colours: [C.sportGrey, C.white, C.navy, C.black],
-    colourImages: { 'Sport Grey': shots('products/tee-sport-grey-couple') },
     fabric: '100% cotton',
     fabricByColour: { 'Sport Grey': '90% cotton / 10% polyester' },
     blurb: 'A smoother, heavier unisex tee with a printed logo on the front, the back, or both.',
@@ -181,14 +146,7 @@ export const products = [
   {
     slug: 'logo-hoodie', name: 'Logo hoodie', category: 'sweats',
     ship: { first: 4.39, extra: 1.19 },
-    previewColour: 'Navy',
     colours: [C.navy, C.black, C.white, C.sportGrey],
-    colourImages: {
-      Navy: shots('tryon/hoodie-navy-model', 'tryon/hoodie-navy-flat'),
-      Black: shots('tryon/hoodie-black-model', 'tryon/hoodie-black-flat'),
-      White: shots('products/hoodie-white-front', 'products/hoodie-white-back'),
-      'Sport Grey': shots('tryon/hoodie-sport-grey-model', 'tryon/hoodie-sport-grey-flat'),
-    },
     fabric: '50% cotton / 50% polyester',
     blurb: 'A pullover hoodie for site teams, gyms and crews. Print the front, the back, or both, or embroider the chest.',
     specs: ['Unisex fit', 'Printed or embroidered', 'Sizes S to 5XL printed, S to 3XL embroidered', 'Four colours'],
@@ -208,14 +166,7 @@ export const products = [
   {
     slug: 'crew-sweatshirt', name: 'Crew sweatshirt', category: 'sweats',
     ship: { first: 3.99, extra: 0.99 },
-    previewColour: 'Navy',
     colours: [C.navy, C.sportGrey, C.white, C.black],
-    colourImages: {
-      Navy: shots('tryon/sweat-navy-model', 'tryon/sweat-navy-flat'),
-      'Sport Grey': shots('tryon/sweat-sport-grey-model', 'tryon/sweat-sport-grey-flat'),
-      White: shots('products/sweat-white-front', 'products/sweat-white-back'),
-      Black: shots('tryon/sweat-black-model', 'tryon/sweat-black-flat'),
-    },
     fabric: '50% cotton / 50% polyester',
     blurb: 'A smart-casual crew neck for offices and winter uniforms. Print it, or have the logo embroidered on the chest.',
     specs: ['Unisex fit', 'Printed or embroidered', 'Sizes S to 5XL printed, S to 3XL embroidered', 'Four colours'],
@@ -234,9 +185,19 @@ export const products = [
   },
 ];
 
+// Professional logo clean-up, done with the Emblara artwork software.
+// CONFIRM: price. Placeholder until the owner sets it.
+products.push({
+  slug: 'logo-clean-up', name: 'Professional logo clean-up', category: 'services', service: true,
+  price: 15,
+  colours: [],
+  method: 'Service',
+  blurb: 'Send us any logo, even a blurry screenshot or a photo of a sign. We redraw it into crisp, print-ready artwork for embroidery and print, and send you the files to keep.',
+  specs: ['Background removed and edges cleaned', 'Embroidery-ready and print-ready versions', 'Light and dark versions for any garment colour', 'Files are yours to keep'],
+});
+
 products.forEach((p) => {
-  // Default shots are the preview colour's.
-  p.images = p.colourImages[p.previewColour] ?? [];
+  if (p.service) return;
   p.method = p.methods.map((m) => m.label).join(' or ');
   // Lowest price for one piece, for "from £x" labels.
   p.price = Math.min(...p.methods.map((m) => unitPrice(p, { method: m.id, qty: 1 })));
@@ -244,5 +205,5 @@ products.forEach((p) => {
 
 export const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
 
-// Photos for a colour; falls back to the product's default shots.
-export const imagesFor = (product, colour) => product.colourImages?.[colour] ?? product.images;
+// The logo position a product shows by default.
+export const defaultPosition = (product) => product.methods?.[0].positions[0].label ?? '';
