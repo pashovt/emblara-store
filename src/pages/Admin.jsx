@@ -28,7 +28,7 @@ export default function Admin({ route }) {
 
   useEffect(() => {
     document.title = 'Store Dashboard — EMBLARA';
-    api('me').then((d) => setEmail(d.email), () => setEmail(null));
+    api('me').then((d) => setEmail(d.email), (err) => setEmail(err.status === 403 ? 'denied' : null));
   }, []);
 
   const onSignOut = async () => {
@@ -38,6 +38,7 @@ export default function Admin({ route }) {
 
   if (email === undefined) return <div className="adm"><p className="adm__muted">Checking your session…</p></div>;
   if (!email) return <Login onDone={setEmail} />;
+  if (email === 'denied') return <NoAccess onSignOut={onSignOut} />;
 
   const section = route.param === 'products' ? 'products' : 'orders';
   return (
@@ -54,6 +55,19 @@ export default function Admin({ route }) {
       <div className="adm__body">
         {section === 'orders' && (route.sub ? <OrderDetail id={route.sub} /> : <Orders />)}
         {section === 'products' && (route.sub ? <ProductForm id={route.sub} /> : <Products />)}
+      </div>
+    </div>
+  );
+}
+
+function NoAccess({ onSignOut }) {
+  return (
+    <div className="adm adm--login">
+      <div className="adm__card adm__login" role="alert">
+        <h1 className="adm__h1">No access</h1>
+        <p className="adm__muted">This account is not store staff, or its access has been turned off. Ask the shop owner to restore it.</p>
+        <button type="button" className="pill pill--copper pill--block" onClick={onSignOut}>Sign out</button>
+        <a href="#/shop">Back to the shop</a>
       </div>
     </div>
   );
@@ -110,37 +124,48 @@ function useLoad(path, deps = []) {
 }
 
 // ----------------------------------------------------------------- orders
+// Payment and fulfilment are separate states. "Paid" here means paid and not yet started.
+const PAYMENT = { paid: 'Paid', pending: 'Not paid', expired: 'Expired' };
+const FULFIL_LABEL = { paid: 'Waiting to start', processing: 'Processing', fulfilled: 'Fulfilled' };
+
 function Orders() {
   const [filter, setFilter] = useState('');
   const [state] = useLoad(`orders${filter ? `?status=${filter}` : ''}`, [filter]);
   const orders = state.data?.orders ?? [];
+  const waiting = state.data?.counts?.paid ?? 0;
+  const inProgress = state.data?.counts?.processing ?? 0;
   return (
     <section>
-      <h1 className="adm__h1">Paid orders</h1>
+      <h1 className="adm__h1">Orders</h1>
+      {!filter && !state.loading && (
+        <p className={`adm__attn${waiting ? ' adm__attn--on' : ''}`} role="status">
+          {waiting ? <><strong>{waiting}</strong> paid {waiting === 1 ? 'order is' : 'orders are'} waiting to be started</> : 'Nothing is waiting to be started'}
+          {inProgress > 0 && <> · <strong>{inProgress}</strong> in progress</>}
+        </p>
+      )}
       <div className="adm__tabs" role="group" aria-label="Filter by status">
         {[['', 'All'], ['paid', 'Paid'], ['processing', 'Processing'], ['fulfilled', 'Fulfilled']].map(([v, label]) => (
           <button key={v} type="button" aria-pressed={filter === v} onClick={() => setFilter(v)}>{label}</button>
         ))}
       </div>
       {state.error && <p className="adm__error">{state.error}</p>}
-      {!state.loading && !orders.length && <p className="adm__muted">No orders here yet. Orders appear once Stripe confirms payment.</p>}
+      {!state.loading && !orders.length && <p className="adm__muted">No orders here yet. An order appears once Stripe confirms its payment.</p>}
       {orders.length > 0 && (
-        <div className="adm__scroll">
-          <table className="adm__table">
-            <thead><tr><th>Order</th><th>Paid</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td><a href={`#/admin/orders/${o.id}`}><strong>{o.number}</strong></a></td>
-                  <td>{when(o.paid_at)}</td>
-                  <td>{o.customer_name}<small>{o.email}</small></td>
-                  <td>{pounds(o.amount_total_pence)}</td>
-                  <td><span className={`adm__badge adm__badge--${o.status}`}>{STATUS[o.status]}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <table className="adm__table adm__table--cards">
+          <thead><tr><th>Order</th><th>Paid</th><th>Customer</th><th>Delivery</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>
+            {orders.map((o) => (
+              <tr key={o.id} className={o.status === 'paid' ? 'is-attention' : undefined}>
+                <td data-label="Order"><a href={`#/admin/orders/${o.id}`}><strong>{o.number}</strong></a></td>
+                <td data-label="Paid">{when(o.paid_at)}</td>
+                <td data-label="Customer">{o.customer_name}<small>{o.email}</small></td>
+                <td data-label="Delivery">{o.fulfilment_method}<small>{o.city}</small></td>
+                <td data-label="Total">{pounds(o.amount_total_pence)}</td>
+                <td data-label="Status"><span className={`adm__badge adm__badge--${o.status}`}>{STATUS[o.status]}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </section>
   );
@@ -151,7 +176,7 @@ function OrderDetail({ id }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const { order, items = [] } = state.data ?? {};
-  const next = { paid: ['processing', 'Move to Processing'], processing: ['fulfilled', 'Mark as Fulfilled'] }[order?.status];
+  const next = { paid: ['processing', 'Start processing'], processing: ['fulfilled', 'Mark as fulfilled'] }[order?.status];
 
   const advance = async () => {
     setBusy(true);
@@ -169,42 +194,58 @@ function OrderDetail({ id }) {
   if (state.error) return <p className="adm__error">{state.error} <a href="#/admin/orders">Back to orders</a></p>;
   if (!order) return <p className="adm__muted">Loading…</p>;
   const ship = order.shipping;
+  const steps = ['paid', 'processing', 'fulfilled'];
   return (
     <section>
       <p><a href="#/admin/orders">← All orders</a></p>
-      <h1 className="adm__h1">Order {order.number} <span className={`adm__badge adm__badge--${order.status}`}>{STATUS[order.status]}</span></h1>
+      <h1 className="adm__h1">Order {order.number}</h1>
+      <div className="adm__states" aria-label="Order status">
+        <p><span>Payment</span><strong className="adm__badge adm__badge--fulfilled">{PAYMENT[order.payment_status]}</strong><small>{when(order.paid_at)}</small></p>
+        <p><span>Fulfilment</span><strong className={`adm__badge adm__badge--${order.status}`}>{FULFIL_LABEL[order.status]}</strong></p>
+      </div>
+      <ol className="adm__steps" aria-label="Fulfilment progress">
+        {steps.map((st, i) => (
+          <li key={st} className={steps.indexOf(order.status) >= i ? 'is-done' : undefined} aria-current={order.status === st ? 'step' : undefined}>{STATUS[st]}</li>
+        ))}
+      </ol>
       <div className="adm__cols">
         <div className="adm__card">
-          <h2>Ship to</h2>
+          <h2>Customer</h2>
+          <p>{order.customer_name}<br />{order.email}<br />{order.phone}</p>
+          <h2>{order.fulfilment_method}</h2>
           {ship ? (
             <address>
               {ship.name}<br />{ship.line1}<br />{ship.line2 && <>{ship.line2}<br /></>}{ship.city}{ship.county && `, ${ship.county}`}<br />{ship.postcode}<br />{ship.country}
             </address>
           ) : <p className="adm__muted">No address recorded.</p>}
-          <p>{order.email}<br />{order.phone}</p>
-          <h2>Order</h2>
-          <p className="adm__muted">Paid {when(order.paid_at)}<br />Stripe payment {order.stripe_payment_intent ?? 'n/a'}</p>
-          <p>Logo: {order.artwork === 'attached' ? 'customer chose it on the product page (see line items)' : 'customer will send it after ordering'}</p>
-          {order.notes && <p><strong>Notes for the proof:</strong> {order.notes}</p>}
+          <h2>Artwork</h2>
+          <p>{order.artwork === 'attached' ? 'The customer chose a logo on the product page (see the item lines).' : 'The customer will send their logo after ordering.'}</p>
+          {order.notes && <><h2>Notes for the proof</h2><p>{order.notes}</p></>}
         </div>
         <div className="adm__card">
           <h2>Items</h2>
-          <table className="adm__table">
-            <thead><tr><th>Item</th><th>Qty</th><th>Line</th></tr></thead>
+          <table className="adm__table adm__table--plain">
+            <thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Line</th></tr></thead>
             <tbody>
               {items.map((i) => (
                 <tr key={i.id}>
                   <td>{i.product_name}<small>{[i.options?.method, i.options?.colour, i.options?.size, i.options?.position].filter(Boolean).join(' · ')}{i.options?.logoName && ` · Logo: ${i.options.logoName}`}</small></td>
                   <td>{i.quantity}</td>
+                  <td>{pounds(i.unit_amount_pence)}</td>
                   <td>{pounds(i.line_amount_pence)}</td>
                 </tr>
               ))}
             </tbody>
-            <tfoot><tr><td colSpan="2">Total paid</td><td><strong>{pounds(order.amount_total_pence)}</strong></td></tr></tfoot>
+            <tfoot><tr><td colSpan="3">Total paid</td><td><strong>{pounds(order.amount_total_pence)}</strong></td></tr></tfoot>
           </table>
-          <p className="adm__muted">These lines are a snapshot from the moment of purchase. Changing a product later never changes this order.</p>
+          <p className="adm__muted">Prices are the ones captured at purchase. Editing a product later never changes this order. “Each” is the line total divided by the quantity, rounded to the penny.</p>
           {error && <p className="adm__error" role="alert">{error}</p>}
-          {next ? <button type="button" className="pill pill--copper" disabled={busy} onClick={advance}>{next[1]}</button> : <p><strong>Fulfilled.</strong> Nothing more to do.</p>}
+          {next ? (
+            <button type="button" className="pill pill--copper pill--block" disabled={busy} onClick={advance}>{next[1]}</button>
+          ) : <p><strong>Fulfilled.</strong> Nothing more to do.</p>}
+          {order.payment_reference && (
+            <details className="adm__ref"><summary>Payment reference</summary><p className="adm__muted">For finding this payment in Stripe: <code>{order.payment_reference}</code></p></details>
+          )}
         </div>
       </div>
     </section>
@@ -240,7 +281,7 @@ function Products() {
       <p className="adm__muted">“Published” puts a product in the shop. “Available” lets customers add it to the bag; switch it off when you cannot supply it.</p>
       {(error || state.error) && <p className="adm__error" role="alert">{error || state.error}</p>}
       <div className="adm__scroll">
-        <table className="adm__table">
+        <table className="adm__table adm__table--cards">
           <thead><tr><th>Product</th><th>Finish</th><th>From</th><th>Published</th><th>Available</th><th /></tr></thead>
           <tbody>
             {rows.map((r) => {
@@ -248,12 +289,12 @@ function Products() {
               const from = p.service ? p.price : Math.min(...p.methods.map((m) => unitPrice(p, { method: m.id, qty: 1 })));
               return (
                 <tr key={r.id}>
-                  <td><strong>{r.name}</strong><small>/{r.slug} · {r.category}</small></td>
-                  <td>{p.service ? 'Service' : p.methods.map((m) => m.label).join(' or ')}</td>
-                  <td>{gbp(from)}</td>
-                  <td><Switch on={r.published} label={`Published: ${r.name}`} onChange={(v) => toggle(r, { published: v })} /></td>
-                  <td><Switch on={r.available} label={`Available: ${r.name}`} onChange={(v) => toggle(r, { available: v })} /></td>
-                  <td><a href={`#/admin/products/${r.id}`}>Edit</a></td>
+                  <td data-label="Product"><strong>{r.name}</strong><small>/{r.slug} · {r.category}</small></td>
+                  <td data-label="Finish">{p.service ? 'Service' : p.methods.map((m) => m.label).join(' or ')}</td>
+                  <td data-label="From">{gbp(from)}</td>
+                  <td data-label="Published"><Switch on={r.published} label={`Published: ${r.name}`} onChange={(v) => toggle(r, { published: v })} /></td>
+                  <td data-label="Available"><Switch on={r.available} label={`Available: ${r.name}`} onChange={(v) => toggle(r, { available: v })} /></td>
+                  <td data-label=""><a className="pill pill--ghost-dark adm__edit" href={`#/admin/products/${r.id}`}>Edit</a></td>
                 </tr>
               );
             })}
@@ -443,10 +484,15 @@ function ProductForm({ id }) {
 
         <div className="adm__card">
           <h2>Photos</h2>
-          <p className="adm__muted">PNG, JPEG or WebP, up to 4 MB each. {garment && 'Leave empty to use the built-in model photos with the live logo preview (only the launch range has these).'}</p>
+          <p className="adm__muted">PNG, JPEG or WebP, up to 4 MB each. The first photo is the main one. {garment && 'Leave empty to use the built-in model photos with the live logo preview (only the launch range has these).'}</p>
           <ul className="adm__images">
-            {f.images.map((src) => (
-              <li key={src}><img src={src} alt="" /><button type="button" onClick={() => setF((s) => ({ ...s, images: s.images.filter((x) => x !== src) }))}>Remove</button></li>
+            {f.images.map((src, i) => (
+              <li key={src}>
+                <img src={src} alt="" />
+                <span className="adm__muted">{i === 0 ? 'Main photo' : `Photo ${i + 1}`}</span>
+                {i > 0 && <button type="button" onClick={() => setF((s) => { const a = [...s.images]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return { ...s, images: a }; })}>{i === 1 ? 'Make main' : 'Move earlier'}</button>}
+                <button type="button" onClick={() => setF((s) => ({ ...s, images: s.images.filter((x) => x !== src) }))}>Remove</button>
+              </li>
             ))}
           </ul>
           <input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={upload} aria-label="Upload product photos" />

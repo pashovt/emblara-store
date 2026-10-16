@@ -170,3 +170,24 @@ describe('payment and fulfilment', () => {
     assert.ok(!orders.some((o) => o.number === pending.number));
   });
 });
+
+describe('dashboard order list', () => {
+  it('puts work that needs attention first: waiting (oldest first), processing, then fulfilled (newest first)', async () => {
+    const { listOrders } = await import('../server/admin.js');
+    const make = async (number, fulfilment, minutesAgo) => {
+      const o = await db().createOrder({ number, currency: 'gbp', amount_total_pence: 100 }, []);
+      await db().patchOrder(o.id, { payment_status: 'paid', paid_at: new Date(Date.now() - minutesAgo * 60_000).toISOString() }, { payment_status: 'pending' });
+      if (fulfilment !== 'unfulfilled') await db().patchOrder(o.id, { fulfillment_status: fulfilment }, { payment_status: 'paid' });
+    };
+    await make('EM-ORD-A', 'fulfilled', 3000);
+    await make('EM-ORD-B', 'unfulfilled', 5);
+    await make('EM-ORD-C', 'processing', 100);
+    await make('EM-ORD-D', 'unfulfilled', 200);
+    await make('EM-ORD-E', 'fulfilled', 10);
+    const { orders, counts } = await listOrders();
+    const mine = orders.filter((o) => o.number.startsWith('EM-ORD-')).map((o) => o.number);
+    assert.deepEqual(mine, ['EM-ORD-D', 'EM-ORD-B', 'EM-ORD-C', 'EM-ORD-E', 'EM-ORD-A']);
+    assert.ok(counts.paid >= 2 && counts.processing >= 1);
+    assert.ok(orders.every((o) => !('stripe_session_id' in o) && !('stripe_payment_intent' in o)), 'no Stripe internals in the list');
+  });
+});

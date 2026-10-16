@@ -3497,3 +3497,177 @@ main:focus {
   align-self: center;
   color: var(--text-dim);
 }
+
+/* Dashboard: attention banner, status block, phone/tablet layouts */
+.adm__attn {
+  margin: 0 0 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  background: var(--bone-2);
+  color: var(--text-dim);
+}
+
+.adm__attn--on {
+  background: color-mix(in srgb, var(--copper-lit) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--copper) 55%, transparent);
+  color: var(--text);
+}
+
+.adm__table--cards tr.is-attention td:first-child {
+  box-shadow: inset 4px 0 0 var(--copper);
+}
+
+.adm__states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+.adm__states p {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.adm__states span {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.adm__steps {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.adm__steps li {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  background: var(--bone-2);
+  color: var(--text-dim);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.adm__steps li.is-done {
+  background: #d4f0df;
+  color: #146c43;
+  font-weight: 650;
+}
+
+.adm__ref {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.adm__ref summary {
+  cursor: pointer;
+  color: var(--text-dim);
+}
+
+.adm__table--plain {
+  margin-bottom: 0.75rem;
+}
+
+.adm__edit {
+  min-height: 38px;
+  padding: 0.3rem 1rem;
+}
+
+.adm__images li button {
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .adm__bar {
+    gap: 0.5rem 1rem;
+  }
+  .adm__bar nav {
+    order: 3;
+    flex-basis: 100%;
+    gap: 1.25rem;
+  }
+  .adm__row {
+    grid-template-columns: 1fr;
+  }
+  .adm__tabs button {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+  .adm__switch {
+    min-height: 44px;
+    min-width: 4.5rem;
+  }
+  /* A table row becomes a card: each cell shows its own heading. */
+  .adm__table--cards,
+  .adm__table--cards tbody,
+  .adm__table--cards tr,
+  .adm__table--cards td {
+    display: block;
+    width: 100%;
+  }
+  .adm__table--cards {
+    background: none;
+    border: 0;
+  }
+  .adm__table--cards thead {
+    display: none;
+  }
+  .adm__table--cards tr {
+    margin-bottom: 0.9rem;
+    background: var(--tile);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .adm__table--cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+  }
+  .adm__table--cards td:last-child {
+    border-bottom: 0;
+  }
+  .adm__table--cards td::before {
+    content: attr(data-label);
+    flex: none;
+    font-family: var(--f-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .adm__table--cards td small {
+    text-align: right;
+  }
+  .adm__steps li {
+    padding: 0.45rem 0.25rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1000px) {
+  .adm__body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 721px) {
+  .adm__table--cards td:first-child,
+  .adm__table--cards td[data-label='Delivery'],
+  .adm__table--cards td[data-label='Total'] {
+    white-space: nowrap;
+  }
+}
