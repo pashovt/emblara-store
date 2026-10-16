@@ -30,3 +30,6 @@ dist-ssr
 
 !.env.example
 .neon
+
+# store verification run state (holds a throwaway password)
+.verify-state.json
