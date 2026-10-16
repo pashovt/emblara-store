@@ -47,29 +47,40 @@ export async function startCheckout({ items, notes, artwork }, siteOrigin) {
     const id = `cs_demo_${randomBytes(18).toString('hex')}`;
     session = { id, url: `${siteOrigin}/demo-checkout.html?s=${id}` };
   } else {
-    session = await stripeClient().checkout.sessions.create({
-      mode: 'payment',
-      client_reference_id: order.id,
-      metadata: { order_id: order.id, order_number: order.number },
-      payment_intent_data: { metadata: { order_id: order.id, order_number: order.number } },
-      line_items: lines.map((l) =>
-        l.product.service
-          ? { quantity: l.quantity, price_data: { currency: 'gbp', unit_amount: l.unit_pence, product_data: { name: l.title, ...(lineDescription(l) && { description: lineDescription(l) }) } } }
-          : {
-              quantity: 1,
-              price_data: {
-                currency: 'gbp',
-                unit_amount: l.line_pence,
-                product_data: { name: `${l.title} × ${l.quantity}`, description: lineDescription(l).slice(0, 500) },
+    // Everything below comes from server-side data: the amounts are the ones priceCart()
+    // computed from the stored products. Nothing here is taken from the browser.
+    //   - No shipping_options: delivery is included in every price (approved plan).
+    //   - No automatic_tax / tax_rates: Emblara is not VAT registered. If that changes, tax is
+    //     turned on through Stripe Tax in the dashboard, not by a number in this code.
+    //   - Address collection is for UK delivery only; there is no pickup option in the plan.
+    const reconcile = { order_id: order.id, order_number: order.number, source: 'emblara-store' };
+    session = await stripeClient().checkout.sessions.create(
+      {
+        mode: 'payment',
+        client_reference_id: order.id,
+        metadata: reconcile,
+        payment_intent_data: { metadata: reconcile, description: `Emblara order ${order.number}` },
+        line_items: lines.map((l) =>
+          l.product.service
+            ? { quantity: l.quantity, price_data: { currency: 'gbp', unit_amount: l.unit_pence, product_data: { name: l.title, ...(lineDescription(l) && { description: lineDescription(l) }) } } }
+            : {
+                quantity: 1,
+                price_data: {
+                  currency: 'gbp',
+                  unit_amount: l.line_pence,
+                  product_data: { name: `${l.title} × ${l.quantity}`, description: lineDescription(l).slice(0, 500) },
+                },
               },
-            },
-      ),
-      shipping_address_collection: { allowed_countries: ['GB'] },
-      phone_number_collection: { enabled: true },
-      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
-      success_url: `${siteOrigin}/?session_id={CHECKOUT_SESSION_ID}#/order-success`,
-      cancel_url: `${siteOrigin}/#/checkout`,
-    });
+        ),
+        shipping_address_collection: { allowed_countries: ['GB'] },
+        phone_number_collection: { enabled: true },
+        expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+        success_url: `${siteOrigin}/?session_id={CHECKOUT_SESSION_ID}#/order-success`,
+        cancel_url: `${siteOrigin}/#/checkout`,
+      },
+      // One order, one session: a retried request cannot create a second charge page.
+      { idempotencyKey: `emblara-checkout-${order.id}` },
+    );
   }
 
   await db().patchOrder(order.id, { stripe_session_id: session.id });

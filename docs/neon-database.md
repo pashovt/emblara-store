@@ -89,7 +89,10 @@ Local: all in `.env.local`, written by `neon link`, `neon deploy` and `npm run d
 | `EMBLARA_PUBLIC_DATABASE_URL` | catalogue reads (role `emblara_public`, pooled) | `db:migrate --set-passwords` |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION` | photo uploads and URLs | `neon deploy` / `neon env pull` |
 | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` | admin scripts only (owner) | `neon link` |
-| `ADMIN_SESSION_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL` | server | you |
+| `ADMIN_SESSION_SECRET` | dashboard session cookie | you |
+| `STRIPE_SECRET_KEY` | creates Checkout Sessions (server only; `sk_test_...` now, the live key at launch) | Stripe dashboard, Developers, API keys |
+| `STRIPE_WEBHOOK_SECRET` | verifies webhook signatures (`whsec_...`) | the webhook endpoint in the Stripe dashboard |
+| `SITE_URL` | optional public origin for Stripe redirects | you |
 
 **Vercel** (project `emblara-store`, Production and Preview; done 2026-10-16): `EMBLARA_APP_DATABASE_URL`, `EMBLARA_PUBLIC_DATABASE_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (all Sensitive), `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, and a Vercel-only `ADMIN_SESSION_SECRET` (Sensitive). The owner `DATABASE_URL*` is deliberately not in Vercel: the running site never needs it. The store refuses to start on Vercel without the two role URLs. Preview deployments currently share the production database; create a Neon dev branch for them if that becomes a concern. Stripe variables come next.
 
