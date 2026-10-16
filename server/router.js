@@ -61,13 +61,13 @@ export async function handle(req, res) {
     // ---------------------------------------------------------- dashboard
     if (route === 'POST /admin/login') {
       const body = await readJson(req, 5_000);
-      const email = await login(body.email, body.password, clientIp(req));
-      return send(res, 200, { email }, { 'Set-Cookie': sessionCookie(email, secure) });
+      const who = await login(body.email, body.password, clientIp(req));
+      return send(res, 200, { email: who.email }, { 'Set-Cookie': sessionCookie(who, secure) });
     }
     if (route === 'POST /admin/logout') return send(res, 200, { ok: true }, { 'Set-Cookie': clearCookie(secure) });
 
     if (url.pathname.startsWith('/api/admin/')) {
-      const email = await requireStaff(req);
+      const { email } = await requireStaff(req);
       const id = url.searchParams.get('id');
       switch (route) {
         case 'GET /admin/me': return send(res, 200, { email });

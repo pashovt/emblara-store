@@ -70,6 +70,12 @@ describe('price authority', () => {
 });
 
 describe('payment and fulfilment', () => {
+  it('cannot fulfil an order that was never paid', async () => {
+    const { url } = await startCheckout({ items: [line()] }, 'http://localhost');
+    const unpaid = await db().getOrder({ sessionId: new URL(url).searchParams.get('s') });
+    await assert.rejects(advanceOrder(unpaid.id, 'processing'), /not found/i);
+  });
+
   it('rejects unsigned and wrongly signed webhooks', async () => {
     await assert.rejects(processWebhook(Buffer.from('{}'), undefined), /signature/i);
     const [body] = signed(completed('cs_x', 1));
@@ -80,7 +86,7 @@ describe('payment and fulfilment', () => {
     const { url } = await startCheckout({ items: [line()] }, 'http://localhost');
     const session = new URL(url).searchParams.get('s');
     await assert.rejects(processWebhook(...signed(completed(session, 1))), /mismatch/i);
-    assert.equal((await db().getOrder({ sessionId: session })).status, 'pending_payment');
+    assert.equal((await db().getOrder({ sessionId: session })).payment_status, 'pending');
   });
 
   it('marks paid once, snapshots the order, and survives later price changes and replays', async () => {
@@ -91,7 +97,8 @@ describe('payment and fulfilment', () => {
     assert.equal(replay.duplicate, true);
 
     const order = await db().getOrder({ sessionId: session });
-    assert.equal(order.status, 'paid');
+    assert.equal(order.payment_status, 'paid');
+    assert.equal(order.fulfillment_status, 'unfulfilled');
     assert.equal(order.shipping.postcode, 'LS1 1AA');
     assert.equal(order.notes, 'thread: navy');
 
@@ -109,12 +116,13 @@ describe('payment and fulfilment', () => {
     await assert.rejects(advanceOrder(order.id, 'fulfilled'), /cannot move/);
     assert.equal((await advanceOrder(order.id, 'processing')).order.status, 'processing');
     assert.equal((await advanceOrder(order.id, 'fulfilled')).order.status, 'fulfilled');
+    assert.equal((await db().getOrder({ id: order.id })).fulfillment_status, 'fulfilled');
     await assert.rejects(advanceOrder(order.id, 'processing'), /cannot move/);
   });
 
   it('keeps unpaid orders out of the merchant list', async () => {
     const pending = await startCheckout({ items: [line()] }, 'http://localhost');
-    const orders = await db().listOrders(['paid', 'processing', 'fulfilled']);
+    const orders = await db().listOrders();
     assert.ok(!orders.some((o) => o.number === pending.number));
   });
 });

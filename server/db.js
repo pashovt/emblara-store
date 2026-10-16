@@ -1,6 +1,11 @@
 // Data access. One interface, two backends: Supabase (PostgREST over fetch,
 // service-role key, server only) and a local JSON file for the offline demo.
-// The browser never talks to the database; RLS is on with no policies.
+// The browser never talks to the database. RLS is on in Supabase as well, so even
+// a leaked anon key can read only published, available products.
+//
+// Shared Supabase project: this store uses its own schema (default `emblara`,
+// selected with the Accept-Profile / Content-Profile headers) and its own Storage
+// bucket (default `emblara-products`).
 
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
@@ -9,13 +14,16 @@ import { toRow } from '../src/lib/catalogue.js';
 import { seedProducts } from '../src/data/catalogue-seed.js';
 import { config } from './config.js';
 
-const BUCKET = 'store-images';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const orderNumber = () => 'EM-' + [...randomBytes(6)].map((b) => ALPHABET[b % ALPHABET.length]).join('');
 const now = () => new Date().toISOString();
 
+// Orders the dashboard may see: payment confirmed by a verified Stripe webhook.
+// Filter values are fulfillment states.
+const FULFILMENTS = ['unfulfilled', 'processing', 'fulfilled'];
+
 // ---------------------------------------------------------------- Supabase
-function supabase({ url, key }) {
+function supabase({ url, key, schema, bucket }) {
   const call = async (p, { method = 'GET', body, headers = {} } = {}) => {
     const res = await fetch(`${url}${p}`, {
       method,
@@ -29,61 +37,65 @@ function supabase({ url, key }) {
     const res = await call(`/rest/v1/${p}`, {
       method,
       body: body === undefined ? undefined : JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json', Prefer: prefer },
+      headers: { 'Content-Type': 'application/json', Prefer: prefer, 'Accept-Profile': schema, 'Content-Profile': schema },
     });
     return res.status === 204 ? null : res.json();
   };
   const eq = (v) => `eq.${encodeURIComponent(v)}`;
   const one = (rows) => rows?.[0] ?? null;
+  const publicPrefix = `${url}/storage/v1/object/public/${bucket}/`;
 
   return {
     kind: 'supabase',
-    imagePrefixes: () => [`${url}/storage/v1/object/public/${BUCKET}/`],
+    imagePrefixes: () => [publicPrefix],
     async listProducts({ publishedOnly } = {}) {
-      return rest(`store_products?select=*&order=sort.asc,name.asc${publishedOnly ? '&published=eq.true' : ''}`);
+      return rest(`products?select=*&order=sort.asc,name.asc${publishedOnly ? '&published=eq.true' : ''}`);
     },
     async getProduct(id) {
-      return one(await rest(`store_products?select=*&id=${eq(id)}`));
+      return one(await rest(`products?select=*&id=${eq(id)}`));
     },
     async saveProduct(row, id) {
-      if (id) return one(await rest(`store_products?id=${eq(id)}`, { method: 'PATCH', body: { ...row, updated_at: now() } }));
-      return one(await rest('store_products', { method: 'POST', body: row }));
+      if (id) return one(await rest(`products?id=${eq(id)}`, { method: 'PATCH', body: row }));
+      return one(await rest('products', { method: 'POST', body: row }));
     },
     async seedIfEmpty() {
-      const have = await rest('store_products?select=id&limit=1');
+      const have = await rest('products?select=id&limit=1');
       if (have.length) return false;
-      await rest('store_products', { method: 'POST', body: seedProducts.map((p, i) => toRow(p, i)) });
+      await rest('products', { method: 'POST', body: seedProducts.map((p, i) => ({ ...toRow(p, i), published: true })) });
       return true;
     },
     async createOrder(order, items) {
-      const created = one(await rest('store_orders', { method: 'POST', body: order }));
+      const created = one(await rest('orders', { method: 'POST', body: order }));
       try {
-        await rest('store_order_items', { method: 'POST', body: items.map((i) => ({ ...i, order_id: created.id })), prefer: 'return=minimal' });
+        await rest('order_items', { method: 'POST', body: items.map((i) => ({ ...i, order_id: created.id })), prefer: 'return=minimal' });
       } catch (err) {
-        await rest(`store_orders?id=${eq(created.id)}`, { method: 'DELETE', prefer: 'return=minimal' }).catch(() => {});
+        // Roll back our own half-written order (a pending row we just created).
+        await rest(`orders?id=${eq(created.id)}&payment_status=eq.pending`, { method: 'DELETE', prefer: 'return=minimal' }).catch(() => {});
         throw err;
       }
       return created;
     },
     async getOrder({ id, sessionId }) {
-      return one(await rest(`store_orders?select=*&${id ? `id=${eq(id)}` : `stripe_session_id=${eq(sessionId)}`}`));
+      return one(await rest(`orders?select=*&${id ? `id=${eq(id)}` : `stripe_session_id=${eq(sessionId)}`}`));
     },
     async orderItems(orderId) {
-      return rest(`store_order_items?select=*&order_id=${eq(orderId)}&order=created_at.asc`);
+      return rest(`order_items?select=*&order_id=${eq(orderId)}&order=created_at.asc`);
     },
-    async patchOrder(id, patch, { ifStatus } = {}) {
-      const filter = `id=${eq(id)}${ifStatus ? `&status=${eq(ifStatus)}` : ''}`;
-      return one(await rest(`store_orders?${filter}`, { method: 'PATCH', body: { ...patch, updated_at: now() } }));
+    // `when` makes the update conditional (compare-and-set), e.g. { payment_status: 'pending' }.
+    async patchOrder(id, patch, when = {}) {
+      const cond = Object.entries(when).map(([k, v]) => `&${k}=${eq(v)}`).join('');
+      return one(await rest(`orders?id=${eq(id)}${cond}`, { method: 'PATCH', body: patch }));
     },
-    async listOrders(statuses) {
-      return rest(`store_orders?select=*&status=in.(${statuses.join(',')})&order=paid_at.desc.nullslast,created_at.desc&limit=200`);
+    async listOrders(fulfilments = FULFILMENTS) {
+      return rest(`orders?select=*&payment_status=eq.paid&fulfillment_status=in.(${fulfilments.join(',')})&order=paid_at.desc.nullslast&limit=200`);
     },
-    async isStaff(email) {
-      return (await rest(`store_staff?select=email&email=${eq(email.toLowerCase())}`)).length > 0;
+    // Authorised staff: a row in <schema>.staff for this Supabase Auth user id.
+    async isStaff(userId) {
+      return (await rest(`staff?select=user_id&user_id=${eq(userId)}`)).length > 0;
     },
     async storeImage(buf, name, contentType) {
-      await call(`/storage/v1/object/${BUCKET}/${name}`, { method: 'POST', body: buf, headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000, immutable' } });
-      return `${url}/storage/v1/object/public/${BUCKET}/${name}`;
+      await call(`/storage/v1/object/${bucket}/${name}`, { method: 'POST', body: buf, headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000, immutable' } });
+      return `${publicPrefix}${name}`;
     },
   };
 }
@@ -102,7 +114,7 @@ function local() {
       cache = { products: [], orders: [], items: [] };
     }
     if (cache.products.length === 0) {
-      cache.products = seedProducts.map((p, i) => ({ id: randomUUID(), ...toRow(p, i), created_at: now(), updated_at: now() }));
+      cache.products = seedProducts.map((p, i) => ({ id: randomUUID(), ...toRow(p, i), published: true, created_at: now(), updated_at: now() }));
       await save();
     }
     return cache;
@@ -145,7 +157,8 @@ function local() {
     },
     async createOrder(order, items) {
       const db = await load();
-      const created = { id: randomUUID(), ...order, created_at: now(), updated_at: now() };
+      // Same defaults the Postgres table applies.
+      const created = { id: randomUUID(), payment_status: 'pending', fulfillment_status: 'unfulfilled', ...order, created_at: now(), updated_at: now() };
       db.orders.push(created);
       items.forEach((i) => db.items.push({ id: randomUUID(), ...i, order_id: created.id, created_at: now() }));
       await save();
@@ -157,17 +170,21 @@ function local() {
     async orderItems(orderId) {
       return clone((await load()).items.filter((i) => i.order_id === orderId));
     },
-    async patchOrder(id, patch, { ifStatus } = {}) {
+    async patchOrder(id, patch, when = {}) {
       const db = await load();
       const o = db.orders.find((x) => x.id === id);
-      if (!o || (ifStatus && o.status !== ifStatus)) return null;
+      if (!o || Object.entries(when).some(([k, v]) => o[k] !== v)) return null;
       Object.assign(o, patch, { updated_at: now() });
       await save();
       return clone(o);
     },
-    async listOrders(statuses) {
+    async listOrders(fulfilments = FULFILMENTS) {
       const { orders } = await load();
-      return clone(orders.filter((o) => statuses.includes(o.status)).sort((a, b) => (b.paid_at ?? b.created_at).localeCompare(a.paid_at ?? a.created_at)));
+      return clone(
+        orders
+          .filter((o) => o.payment_status === 'paid' && fulfilments.includes(o.fulfillment_status))
+          .sort((a, b) => (b.paid_at ?? b.created_at).localeCompare(a.paid_at ?? a.created_at)),
+      );
     },
     async isStaff() {
       return false; // local mode signs in with DEMO_STAFF_* (see auth.js)
@@ -187,7 +204,7 @@ let backend = null;
 let backendKey = '';
 export function db() {
   const cfg = config();
-  const key = cfg.supabase ? `${cfg.supabase.url}|${cfg.supabase.key}` : 'local';
+  const key = cfg.supabase ? `${cfg.supabase.url}|${cfg.supabase.key}|${cfg.supabase.schema}|${cfg.supabase.bucket}` : 'local';
   if (!backend || backendKey !== key) {
     backend = cfg.supabase ? supabase(cfg.supabase) : local();
     backendKey = key;

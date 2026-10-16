@@ -27,7 +27,7 @@ export function fromRow(row) {
     sort: row.sort ?? 0,
   };
   if (row.kind === 'service') {
-    return { ...base, service: true, price: Number(row.price), colours: [], method: 'Service' };
+    return { ...base, service: true, price: row.price_pence / 100, colours: [], method: 'Service' };
   }
   return {
     ...base,
@@ -49,11 +49,11 @@ export function fromRow(row) {
 // A seed product (src/data/catalogue-seed.js) -> a row without id/timestamps.
 export function toRow(p, sort = 0) {
   if (p.service) {
-    return { slug: p.slug, name: p.name, category: p.category, kind: 'service', blurb: p.blurb, material: null, fabric: null, price: p.price, config: { specs: p.specs }, images: [], published: true, available: true, sort };
+    return { slug: p.slug, name: p.name, category: p.category, kind: 'service', blurb: p.blurb, material: null, fabric: null, price_pence: Math.round(p.price * 100), config: { specs: p.specs }, images: [], published: true, available: true, sort };
   }
   return {
     slug: p.slug, name: p.name, category: p.category, kind: 'garment', blurb: p.blurb,
-    material: p.material ?? null, fabric: p.fabric ?? null, price: null,
+    material: p.material ?? null, fabric: p.fabric ?? null, price_pence: null,
     config: {
       specs: p.specs, ship: p.ship, colours: p.colours,
       materialByColour: p.materialByColour, fabricByColour: p.fabricByColour,
@@ -119,7 +119,7 @@ export function parseProductInput(input, imagePrefixes) {
   const specs = list(input.specs ?? [], 'Spec points', 8).map((s) => str(s, 'Spec point', { min: 1, max: 120 }));
 
   if (kind === 'service') {
-    return { ...row, material: null, fabric: null, price: num(input.price, 'Price', 0.5, 1000), config: { specs } };
+    return { ...row, material: null, fabric: null, price_pence: Math.round(num(input.price, 'Price', 0.5, 1000) * 100), config: { specs } };
   }
 
   const colours = list(input.colours, 'Colours', 12).map((c) => {
@@ -145,7 +145,7 @@ export function parseProductInput(input, imagePrefixes) {
     ...row,
     material: str(input.material ?? '', 'Material', { max: 60 }) || null,
     fabric: str(input.fabric ?? '', 'Fabric', { max: 200 }) || null,
-    price: null,
+    price_pence: null,
     config: { specs, ship, colours, methods },
   };
 }

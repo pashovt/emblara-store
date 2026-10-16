@@ -26,7 +26,6 @@ export async function startCheckout({ items, notes, artwork }, siteOrigin) {
   const order = await db().createOrder(
     {
       number: orderNumber(),
-      status: 'pending_payment',
       currency: 'gbp',
       amount_total_pence: total_pence,
       notes: cleanText(notes, 500) || null,
@@ -97,7 +96,7 @@ export async function processWebhook(rawBody, signature) {
   const s = event.data.object;
   if (event.type === 'checkout.session.expired') {
     const order = await db().getOrder({ sessionId: s.id });
-    if (order) await db().patchOrder(order.id, { status: 'cancelled' }, { ifStatus: 'pending_payment' });
+    if (order) await db().patchOrder(order.id, { payment_status: 'expired' }, { payment_status: 'pending' });
     return { received: true };
   }
   if (event.type !== 'checkout.session.completed' && event.type !== 'checkout.session.async_payment_succeeded') return { received: true, ignored: true };
@@ -105,7 +104,7 @@ export async function processWebhook(rawBody, signature) {
 
   const order = await db().getOrder({ sessionId: s.id });
   if (!order) throw new HttpError(400, 'Unknown checkout session.');
-  if (order.status !== 'pending_payment') return { received: true, duplicate: true };
+  if (order.payment_status !== 'pending') return { received: true, duplicate: true };
   // The paid amount must be the amount WE stored, in GBP.
   if (s.amount_total !== order.amount_total_pence || String(s.currency).toLowerCase() !== order.currency) {
     console.error(`[stripe-webhook] amount mismatch on ${order.number}: paid ${s.amount_total} ${s.currency}, expected ${order.amount_total_pence}`);
@@ -116,7 +115,7 @@ export async function processWebhook(rawBody, signature) {
   await db().patchOrder(
     order.id,
     {
-      status: 'paid',
+      payment_status: 'paid',
       paid_at: new Date().toISOString(),
       stripe_payment_intent: typeof s.payment_intent === 'string' ? s.payment_intent : null,
       email: s.customer_details?.email ?? null,
@@ -124,7 +123,7 @@ export async function processWebhook(rawBody, signature) {
       phone: s.customer_details?.phone ?? null,
       shipping: addressOf(ship),
     },
-    { ifStatus: 'pending_payment' },
+    { payment_status: 'pending' },
   );
   return { received: true, paid: order.number };
 }
@@ -133,7 +132,7 @@ export async function processWebhook(rawBody, signature) {
 // Only reachable when STRIPE_SECRET_KEY is absent.
 export async function demoSession(sessionId) {
   const order = await db().getOrder({ sessionId });
-  if (!order || order.status !== 'pending_payment') throw new HttpError(404, 'Session not found or already used.');
+  if (!order || order.payment_status !== 'pending') throw new HttpError(404, 'Session not found or already used.');
   const items = await db().orderItems(order.id);
   return { number: order.number, total_pence: order.amount_total_pence, items: items.map((i) => ({ name: i.product_name, quantity: i.quantity, options: i.options, line_amount_pence: i.line_amount_pence })) };
 }
@@ -141,7 +140,7 @@ export async function demoSession(sessionId) {
 export async function demoPay(sessionId, f, siteOrigin) {
   const cfg = config();
   const order = await db().getOrder({ sessionId });
-  if (!order || order.status !== 'pending_payment') throw new HttpError(404, 'Session not found or already used.');
+  if (!order || order.payment_status !== 'pending') throw new HttpError(404, 'Session not found or already used.');
   const t = (v, max = 120) => cleanText(v, max);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t(f.email, 254)) || !t(f.name) || !t(f.line1) || !t(f.city) || !/^[A-Za-z]{1,2}\d[A-Za-z\d]?\s*\d[A-Za-z]{2}$/.test(t(f.postcode, 10))) {
     throw new HttpError(400, 'Check your email, name, address and UK postcode.');
@@ -176,5 +175,5 @@ export async function orderStatus(sessionId) {
   if (typeof sessionId !== 'string' || sessionId.length < 10 || sessionId.length > 200) throw new HttpError(400, 'Bad session.');
   const o = await db().getOrder({ sessionId });
   if (!o) throw new HttpError(404, 'Not found.');
-  return { number: o.number, paid: o.status !== 'pending_payment' && o.status !== 'cancelled', total_pence: o.amount_total_pence };
+  return { number: o.number, paid: o.payment_status === 'paid', total_pence: o.amount_total_pence };
 }

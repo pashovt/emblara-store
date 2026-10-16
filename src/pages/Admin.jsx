@@ -214,7 +214,7 @@ function OrderDetail({ id }) {
 // --------------------------------------------------------------- products
 const rowToInput = (r, patch = {}) => ({
   kind: r.kind, slug: r.slug, name: r.name, category: r.category, blurb: r.blurb, material: r.material ?? '', fabric: r.fabric ?? '',
-  price: r.price, specs: r.config?.specs ?? [], ship: r.config?.ship, colours: r.config?.colours, methods: r.config?.methods,
+  price: r.price_pence == null ? undefined : r.price_pence / 100, specs: r.config?.specs ?? [], ship: r.config?.ship, colours: r.config?.colours, methods: r.config?.methods,
   images: r.images ?? [], published: r.published, available: r.available, sort: r.sort, ...patch,
 });
 
@@ -298,7 +298,7 @@ const blank = () => ({
 
 function toForm(row) {
   const c = row.config ?? {};
-  const f = { ...blank(), kind: row.kind, slug: row.slug, name: row.name, category: row.category, blurb: row.blurb, material: row.material ?? '', fabric: row.fabric ?? '', price: row.price ?? 15, sort: row.sort, images: row.images ?? [], published: row.published, available: row.available, specs: (c.specs ?? []).join('\n') };
+  const f = { ...blank(), kind: row.kind, slug: row.slug, name: row.name, category: row.category, blurb: row.blurb, material: row.material ?? '', fabric: row.fabric ?? '', price: row.price_pence == null ? 15 : row.price_pence / 100, sort: row.sort, images: row.images ?? [], published: row.published, available: row.available, specs: (c.specs ?? []).join('\n') };
   if (row.kind === 'garment') {
     f.shipFirst = String(c.ship?.first ?? 0);
     f.shipExtra = String(c.ship?.extra ?? 0);

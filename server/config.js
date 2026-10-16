@@ -15,7 +15,8 @@ export function config() {
   const supabaseKey = env('SUPABASE_SERVICE_ROLE_KEY');
   return {
     onVercel: !!env('VERCEL'),
-    supabase: supabaseUrl && supabaseKey ? { url: supabaseUrl, key: supabaseKey, anon: env('SUPABASE_ANON_KEY') } : null,
+    // Shared project: this store's tables live in its own schema and its photos in its own bucket.
+    supabase: supabaseUrl && supabaseKey ? { url: supabaseUrl, key: supabaseKey, anon: env('SUPABASE_ANON_KEY'), schema: env('SUPABASE_SCHEMA') || 'emblara', bucket: env('SUPABASE_BUCKET') || 'emblara-products' } : null,
     stripeKey,
     // Real Stripe signing secret, or the demo secret used by the demo payment page.
     webhookSecret: env('STRIPE_WEBHOOK_SECRET') || env('DEMO_WEBHOOK_SECRET'),

@@ -5,8 +5,12 @@ import { isInvalid, parseProductInput } from '../src/lib/catalogue.js';
 import { db } from './db.js';
 import { HttpError } from './http.js';
 
-const VISIBLE = ['paid', 'processing', 'fulfilled'];
-const NEXT = { paid: 'processing', processing: 'fulfilled' };
+// The dashboard shows one status per order: Paid -> Processing -> Fulfilled.
+// Underneath, payment and fulfilment are separate columns; only paid orders are visible.
+const NEXT = { unfulfilled: 'processing', processing: 'fulfilled' };
+const FULFILMENT_OF = { paid: 'unfulfilled', processing: 'processing', fulfilled: 'fulfilled' };
+const withStatus = (o) => ({ ...o, status: o.fulfillment_status === 'unfulfilled' ? 'paid' : o.fulfillment_status });
+const isVisible = (o) => o?.payment_status === 'paid';
 
 const invalid = (fn) => {
   try {
@@ -46,24 +50,26 @@ export async function saveProduct(input, id) {
 }
 
 export async function listOrders(statusFilter) {
-  const statuses = VISIBLE.includes(statusFilter) ? [statusFilter] : VISIBLE;
-  return { orders: await db().listOrders(statuses) };
+  const orders = await db().listOrders(FULFILMENT_OF[statusFilter] ? [FULFILMENT_OF[statusFilter]] : undefined);
+  return { orders: orders.map(withStatus) };
 }
 
 export async function getOrder(id) {
   const order = await db().getOrder({ id });
-  if (!order || !VISIBLE.includes(order.status)) throw new HttpError(404, 'Order not found.');
-  return { order, items: await db().orderItems(order.id) };
+  if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
+  return { order: withStatus(order), items: await db().orderItems(order.id) };
 }
 
 // Paid -> Processing -> Fulfilled, one step at a time, never backwards.
 export async function advanceOrder(id, to) {
   const order = await db().getOrder({ id });
-  if (!order || !VISIBLE.includes(order.status)) throw new HttpError(404, 'Order not found.');
-  if (NEXT[order.status] !== to) throw new HttpError(409, `An order that is ${order.status} cannot move to ${to}.`);
-  const updated = await db().patchOrder(id, { status: to }, { ifStatus: order.status });
+  if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
+  const from = withStatus(order).status;
+  if (NEXT[order.fulfillment_status] !== to) throw new HttpError(409, `An order that is ${from} cannot move to ${to}.`);
+  // Compare-and-set on both columns: only a paid order moves, and only from the state we just read.
+  const updated = await db().patchOrder(id, { fulfillment_status: to }, { payment_status: 'paid', fulfillment_status: order.fulfillment_status });
   if (!updated) throw new HttpError(409, 'The order changed. Reload and try again.');
-  return { order: updated };
+  return { order: withStatus(updated) };
 }
 
 // Images: PNG, JPEG or WebP only, identified by content (not by the claimed type).

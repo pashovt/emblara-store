@@ -25,8 +25,8 @@ function secret() {
   return s;
 }
 
-export function sessionCookie(email, secure) {
-  const body = b64(JSON.stringify({ email, exp: Math.floor(Date.now() / 1000) + TTL_S }));
+export function sessionCookie({ sub, email }, secure) {
+  const body = b64(JSON.stringify({ sub, email, exp: Math.floor(Date.now() / 1000) + TTL_S }));
   const token = `${body}.${mac(body, secret())}`;
   return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${TTL_S}${secure ? '; Secure' : ''}`;
 }
@@ -38,7 +38,7 @@ function readCookie(req) {
   return m?.[1] ?? null;
 }
 
-// Throws 401 unless the request carries a valid staff session. Returns the email.
+// Throws 401 unless the request carries a valid staff session. Returns { sub, email }.
 export async function requireStaff(req) {
   const token = readCookie(req);
   const [body, sig] = (token ?? '').split('.');
@@ -49,17 +49,18 @@ export async function requireStaff(req) {
   } catch {
     throw new HttpError(401, 'Sign in to continue.');
   }
-  if (!data.email || data.exp < Date.now() / 1000) throw new HttpError(401, 'Your session has expired. Sign in again.');
+  if (!data.sub || !data.email || data.exp < Date.now() / 1000) throw new HttpError(401, 'Your session has expired. Sign in again.');
   // Authorisation is checked on every request, so removing someone from the
   // staff list takes effect immediately.
-  if (!(await isAuthorised(data.email))) throw new HttpError(403, 'This account is not authorised for the dashboard.');
-  return data.email;
+  if (!(await isAuthorised(data.sub))) throw new HttpError(403, 'This account is not authorised for the dashboard.');
+  return { sub: data.sub, email: data.email };
 }
 
-async function isAuthorised(email) {
+// `sub` is the Supabase Auth user id (the demo store uses the demo email).
+async function isAuthorised(sub) {
   const cfg = config();
-  if (!cfg.supabase) return !!cfg.demoStaff.email && same(email, cfg.demoStaff.email);
-  return db().isStaff(email);
+  if (!cfg.supabase) return !!cfg.demoStaff.email && same(sub, cfg.demoStaff.email);
+  return db().isStaff(sub);
 }
 
 // Throttle guessing: 6 failures per 10 minutes per address + IP (best effort,
@@ -73,7 +74,7 @@ function throttle(key) {
   return () => fails.set(key, [...recent, now]);
 }
 
-// Returns the authenticated email, or throws.
+// Returns { sub, email } for an authenticated AND authorised staff member, or throws.
 export async function login(email, password, ip) {
   const e = String(email ?? '').trim().toLowerCase();
   const pw = String(password ?? '');
@@ -90,7 +91,7 @@ export async function login(email, password, ip) {
     const h = (s) => scryptSync(s, 'emblara-demo', 32);
     const okPw = !!cfg.demoStaff.password && timingSafeEqual(h(pw), h(cfg.demoStaff.password));
     if (!cfg.demoStaff.email || e !== cfg.demoStaff.email || !okPw) throw deny();
-    return e;
+    return { sub: e, email: e };
   }
 
   const res = await fetch(`${cfg.supabase.url}/auth/v1/token?grant_type=password`, {
@@ -99,6 +100,8 @@ export async function login(email, password, ip) {
     body: JSON.stringify({ email: e, password: pw }),
   });
   if (!res.ok) throw deny();
-  if (!(await db().isStaff(e))) throw deny();
-  return e;
+  const user = (await res.json()).user;
+  // Signed in is not the same as staff: the same login pool serves other businesses.
+  if (!user?.id || !(await db().isStaff(user.id))) throw deny();
+  return { sub: user.id, email: e };
 }
