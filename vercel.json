@@ -1,3 +1,10 @@
 {
-  "rewrites": [{ "source": "/api/:path*", "destination": "/api/router" }]
+  "rewrites": [{ "source": "/api/:path*", "destination": "/api/router" }],
+  "redirects": [
+    { "source": "/product/:slug", "destination": "/#/product/:slug", "permanent": false },
+    { "source": "/shop", "destination": "/#/shop", "permanent": false },
+    { "source": "/shop/:category", "destination": "/#/shop/:category", "permanent": false },
+    { "source": "/checkout", "destination": "/#/checkout", "permanent": false },
+    { "source": "/admin", "destination": "/#/admin", "permanent": false }
+  ]
 }

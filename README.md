@@ -128,7 +128,7 @@ The storefront now sits on a small backend: real products, guest checkout throug
 |---|---|
 | Customer path: shop → product → bag → `#/checkout` → Stripe → `#/order-success` | `src/pages/*`, `server/payments.js` |
 | Merchant path: `#/admin` (sign in, Orders, Products) | `src/pages/Admin.jsx`, `server/admin.js`, `server/auth.js` |
-| One `/api/*` entry (Vite dev middleware and a Vercel function) | `server/router.js`, `api/router.js` + `vercel.json` rewrite |
+| One `/api/*` entry (Vite dev middleware and a Vercel function) | `server/router.js`, `api/router.js` + `vercel.json` rewrite (path URLs such as `/product/<slug>` redirect to the app's `#/` routes) |
 | Tables, RLS, roles, photo bucket (Neon project `emblara-store`) | `db/migrations/001_emblara_store.sql`, `neon.ts`, `docs/neon-database.md` |
 | First merchant (script run once by the owner, hidden password prompt) | `npm run db:create-staff` |
 | Seed the launch range / check the database rules | `npm run seed` (only when empty) / `npm run db:check` |
