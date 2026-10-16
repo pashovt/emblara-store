@@ -75,6 +75,8 @@ values (lower('OWNER@EXAMPLE.COM'), public.crypt('CHOOSE-A-LONG-PASSWORD', publi
 returning id, email;
 ```
 
+To set a new password for an existing login (also re-activates it): `npm run db:create-staff -- --reset`.
+
 To revoke someone: `update emblara.staff set active = false where email = '...';` (takes effect on their next request).
 
 ## Environment variables
@@ -89,7 +91,7 @@ Local: all in `.env.local`, written by `neon link`, `neon deploy` and `npm run d
 | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` | admin scripts only (owner) | `neon link` |
 | `ADMIN_SESSION_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL` | server | you |
 
-**Vercel:** set `EMBLARA_APP_DATABASE_URL`, `EMBLARA_PUBLIC_DATABASE_URL` and the four `AWS_*` variables yourself (Project Settings, Environment Variables). Do **not** put the owner `DATABASE_URL*` in Vercel: the running site never needs it. The store refuses to start on Vercel without the two role URLs.
+**Vercel** (project `emblara-store`, Production and Preview; done 2026-10-16): `EMBLARA_APP_DATABASE_URL`, `EMBLARA_PUBLIC_DATABASE_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (all Sensitive), `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, and a Vercel-only `ADMIN_SESSION_SECRET` (Sensitive). The owner `DATABASE_URL*` is deliberately not in Vercel: the running site never needs it. The store refuses to start on Vercel without the two role URLs. Preview deployments currently share the production database; create a Neon dev branch for them if that becomes a concern. Stripe variables come next.
 
 ## Check the rules hold
 
@@ -102,6 +104,6 @@ Connects as the real `emblara_public` and `emblara_app` roles and proves 28 thin
 ## Limits and decisions
 
 - **Region.** Frankfurt, not London, because Object Storage is not offered in `aws-eu-west-2`. Data stays in the EU.
-- **Free plan.** Scale-to-zero means the first request after idle is slower. Check the current plan limits at neon.com/docs/introduction/plans before launch.
+- **Neon plans (from neon.com/pricing, 2026-10-16).** Free: 100 projects, 1 GB Postgres per project, 100 CU-hours per project, 5 GB Object Storage, 5 GB public egress per project, 10 branches, Auth to 60k MAU, scale-to-zero after 5 minutes (cannot be turned off), and only a **6-hour** restore history with no instant restore. Running out of CU-hours or egress suspends compute until the next billing period; over 1 GB blocks writes; none of it deletes data. Launch lifts the restore window to 7 days and adds instant restore; Scale gives 30 days, an uptime SLA and IP Allow. For a shop taking real orders, move to Launch first: 6 hours is too short a safety net for order data, and the 5 GB egress cap includes product photos served from the bucket (a CDN in front of it helps).
 - **Neon Auth** (managed Better Auth) was not used: one merchant does not need an identity service, and `emblara.staff` keeps the rule inside the database. Revisit if customers ever get accounts.
-- **Backups.** Neon keeps history for point-in-time restore within its plan's retention window. Confirm the window you get before taking live orders.
+- **Backups.** Restore history is 6 hours on Free and 7 days on Launch (see above). Consider a scheduled `pg_dump` of `emblara` to a place you control before launch.
