@@ -10,6 +10,20 @@ import { HttpError } from './http.js';
 const NEXT = { unfulfilled: 'processing', processing: 'fulfilled' };
 const FULFILMENT_OF = { paid: 'unfulfilled', processing: 'processing', fulfilled: 'fulfilled' };
 const withStatus = (o) => ({ ...o, status: o.fulfillment_status === 'unfulfilled' ? 'paid' : o.fulfillment_status });
+
+// What the dashboard may see of an order. Stripe's session id never leaves the server; the payment
+// reference (needed to find a payment in Stripe, e.g. for a refund) is sent only on the detail view.
+const FULFILMENT_METHOD = 'UK delivery'; // the approved plan has delivery only
+const forList = (o) => ({
+  id: o.id, number: o.number, status: withStatus(o).status, payment_status: o.payment_status, fulfillment_status: o.fulfillment_status,
+  customer_name: o.customer_name, email: o.email, city: o.shipping?.city ?? null,
+  amount_total_pence: o.amount_total_pence, paid_at: o.paid_at, created_at: o.created_at, fulfilment_method: FULFILMENT_METHOD,
+});
+// Work that needs attention first: paid and waiting (oldest first, they have waited longest), then
+// processing (oldest first), then fulfilled (newest first).
+const RANK = { paid: 0, processing: 1, fulfilled: 2 };
+const when = (o) => new Date(o.paid_at ?? o.created_at).getTime();
+const byAttention = (a, b) => RANK[a.status] - RANK[b.status] || (a.status === 'fulfilled' ? when(b) - when(a) : when(a) - when(b));
 const isVisible = (o) => o?.payment_status === 'paid';
 
 const invalid = (fn) => {
@@ -51,13 +65,24 @@ export async function saveProduct(input, id) {
 
 export async function listOrders(statusFilter) {
   const orders = await db().listOrders(FULFILMENT_OF[statusFilter] ? [FULFILMENT_OF[statusFilter]] : undefined);
-  return { orders: orders.map(withStatus) };
+  const list = orders.map(forList).sort(byAttention);
+  return { orders: list, counts: { paid: list.filter((o) => o.status === 'paid').length, processing: list.filter((o) => o.status === 'processing').length } };
 }
 
 export async function getOrder(id) {
   const order = await db().getOrder({ id });
   if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
-  return { order: withStatus(order), items: await db().orderItems(order.id) };
+  const items = await db().orderItems(order.id);
+  return {
+    order: {
+      id: order.id, number: order.number, status: withStatus(order).status,
+      payment_status: order.payment_status, fulfillment_status: order.fulfillment_status,
+      customer_name: order.customer_name, email: order.email, phone: order.phone, shipping: order.shipping,
+      notes: order.notes, artwork: order.artwork, amount_total_pence: order.amount_total_pence, currency: order.currency,
+      paid_at: order.paid_at, created_at: order.created_at, fulfilment_method: FULFILMENT_METHOD, payment_reference: order.stripe_payment_intent,
+    },
+    items: items.map((i) => ({ id: i.id, product_name: i.product_name, options: i.options, quantity: i.quantity, unit_amount_pence: i.unit_amount_pence, line_amount_pence: i.line_amount_pence })),
+  };
 }
 
 // Paid -> Processing -> Fulfilled, one step at a time, never backwards.
@@ -69,7 +94,7 @@ export async function advanceOrder(id, to) {
   // Compare-and-set on both columns: only a paid order moves, and only from the state we just read.
   const updated = await db().patchOrder(id, { fulfillment_status: to }, { payment_status: 'paid', fulfillment_status: order.fulfillment_status });
   if (!updated) throw new HttpError(409, 'The order changed. Reload and try again.');
-  return { order: withStatus(updated) };
+  return { order: forList(updated) };
 }
 
 // Images: PNG, JPEG or WebP only, identified by content (not by the claimed type).
