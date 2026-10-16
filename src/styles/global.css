@@ -838,6 +838,12 @@ main:focus {
   opacity: 1;
 }
 
+/* The second image can have a transparent background, so the first one must fade out
+   while it fades in. Otherwise the first image shows through underneath it. */
+.card:hover .card__media--swap > :first-child {
+  opacity: 0;
+}
+
 .card__badge {
   position: absolute;
   top: 0.75rem;
