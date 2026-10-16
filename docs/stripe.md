@@ -48,6 +48,16 @@ npm run stripe:check # another: creates sessions via the API, then asks Stripe w
 
 Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
 
+## Support email
+
+The customer-facing address is `support@emblara.co.uk`, set once as `supportEmail` in `src/data/site.js`. The site footer, the pending-payment message, the checkout error text and the line under the Pay button on the Stripe page (`custom_text.submit.message`) all read it from there.
+
+Stripe account settings cannot be changed through the API for a normal account, so set these yourself in the Stripe dashboard (test mode and live mode are separate, so repeat them for live):
+
+1. **Settings → Business → Public details:** Support email = `support@emblara.co.uk`. Receipts and Checkout show it.
+2. **Settings → Personal details / Team:** account notifications go to the owner login. Change that email only if the owner wants Stripe alerts at the new address.
+3. **Settings → Business → Customer emails:** turn on "Successful payments" receipts so buyers get a receipt that names the support address.
+
 ## Webhook endpoint
 
 Registered in the Emblara Stripe **sandbox** (test mode) on 2026-10-16: `https://emblara-store.vercel.app/api/stripe-webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`. Its signing secret is `STRIPE_WEBHOOK_SECRET` in Vercel Production and in `.env.local`. The endpoint must be publicly reachable, so it cannot sit behind Vercel deployment protection (the production domain is public; preview URLs are protected, so previews do not receive webhooks).

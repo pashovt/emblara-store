@@ -5,6 +5,7 @@
 
 import { fromRow } from '../src/lib/catalogue.js';
 import { quote } from '../src/lib/pricing.js';
+import { site } from '../src/data/site.js';
 import { HttpError } from './http.js';
 import { db } from './db.js';
 
@@ -68,7 +69,7 @@ export async function priceCart(rawItems) {
   }
 
   const total_pence = lines.reduce((n, l) => n + l.line_pence, 0);
-  if (!(total_pence > 0) || total_pence > 5_000_000) throw new HttpError(400, 'This order cannot be checked out online. Contact us.');
+  if (!(total_pence > 0) || total_pence > 5_000_000) throw new HttpError(400, `This order cannot be checked out online. Email ${site.supportEmail}.`);
   return { lines, total_pence };
 }
 
