@@ -48,10 +48,8 @@ npm run stripe:check # another: creates sessions via the API, then asks Stripe w
 
 Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
 
-## Webhook endpoint (to do once the store is deployed)
+## Webhook endpoint
 
-Stripe dashboard (sandbox), Developers, Webhooks, add endpoint `https://<your-domain>/api/stripe-webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET` in Vercel. The endpoint must be publicly reachable, so it cannot sit behind Vercel deployment protection.
+Registered in the Emblara Stripe **sandbox** (test mode) on 2026-10-16: `https://emblara-store.vercel.app/api/stripe-webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`. Its signing secret is `STRIPE_WEBHOOK_SECRET` in Vercel Production and in `.env.local`. The endpoint must be publicly reachable, so it cannot sit behind Vercel deployment protection (the production domain is public; preview URLs are protected, so previews do not receive webhooks).
 
-## Receipts and emails
-
-This store sends no email in version 1. Stripe's own customer receipt is a separate Stripe setting (Dashboard, Settings, Customer emails, "Successful payments"), and in **test mode Stripe does not send receipts to customers**, so a test payment never produces an email. The thank-you page therefore makes no promise of one. Emailing the order confirmation and the proof is a later feature.
+Register it again (for example for a new domain) with `npm run stripe:webhook -- https://your-domain --vercel` (test mode only). For **live mode**, register the endpoint yourself in the live dashboard, put the live `sk_live_...` key and the new `whsec_...` in Vercel Production, and redeploy: environment variables only reach new deployments.
