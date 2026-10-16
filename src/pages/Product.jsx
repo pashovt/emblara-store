@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { bySlug, categories, defaultPosition, products } from '../data/products.js';
 import { breaks, deliveryNote } from '../data/site.js';
 import { AI_VIEW, viewForPosition, viewsFor } from '../data/placements.js';
@@ -12,6 +12,10 @@ const VIEW_LABELS = { [AI_VIEW]: 'On our model, front', 'ai-front-alt': 'On our 
 
 export default function Product({ slug }) {
   const product = bySlug[slug];
+  // Only public products are ever loaded, so a draft, unpublished or unavailable slug lands here.
+  useEffect(() => {
+    document.title = product ? `${product.name} — EMBLARA` : 'Product not found — EMBLARA';
+  }, [product]);
   if (!product) {
     return (
       <div className="page page--missing">
@@ -146,6 +150,7 @@ function ProductView({ product }) {
             {gbp(unit)} <span>each · delivery{method.id === 'embroidery' ? ', logo set-up' : ''} and proof included</span>
           </p>
           <p className="pdp__blurb">{product.blurb}</p>
+          <p className="pdp__avail">Available to order · made to order with your logo</p>
 
           {product.methods.length > 1 && (
             <fieldset className="opt">
@@ -266,6 +271,7 @@ function ServiceView({ product }) {
           <h1 className="pdp__title">{product.name}</h1>
           <p className="pdp__price">{gbp(product.price)} <span>per logo</span></p>
           <p className="pdp__blurb">{product.blurb}</p>
+          <p className="pdp__avail">Available to order</p>
           <ul className="service-list">{product.specs.map((s) => <li key={s}>{s}</li>)}</ul>
           <p className="opt__hint">
             {custom ? <>We’ll start from <strong>{custom.name}</strong>, the logo you added in this browser.</> : 'Add your logo now or send it after ordering.'}{' '}

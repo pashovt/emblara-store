@@ -138,7 +138,7 @@ export function ProductImage({ product, colour, view, position, className = '', 
 }
 
 // ---------- product card ----------
-export function ProductCard({ product }) {
+export function ProductCard({ product, showBlurb = false }) {
   const uploaded = product.images?.length > 0;
   const swaps = uploaded ? product.images.length > 1 : !product.service;
   return (
@@ -155,6 +155,7 @@ export function ProductCard({ product }) {
             {!product.service && <span className="card__from">from</span>} {gbp(product.price)}
           </span>
         </div>
+        {showBlurb && product.blurb && <p className="card__blurb">{product.blurb}</p>}
         <div className="card__row card__row--meta">
           <span className="card__method">{product.method}</span>
           {product.colours.length > 0 && (

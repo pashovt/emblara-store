@@ -4,7 +4,16 @@
 
 import { retailAdd } from './pricing.js';
 
-export const CATEGORIES = ['polos', 'tees', 'sweats', 'services'];
+// Shop filters. The first entry is the 'all' view; the rest are the category ids a product may use.
+export const categories = [
+  { id: 'all', label: 'All' },
+  { id: 'polos', label: 'Polos' },
+  { id: 'tees', label: 'T-shirts' },
+  { id: 'sweats', label: 'Hoodies & sweatshirts' },
+  { id: 'services', label: 'Services' },
+];
+
+export const CATEGORIES = categories.filter((c) => c.id !== 'all').map((c) => c.id);
 export const METHOD_IDS = { print: 'Printed', embroidery: 'Embroidered' };
 
 const opt = (o) => ({ label: o.label, cost: o.cost ?? 0, add: o.cost ? retailAdd(o.cost) : 0 });
@@ -46,7 +55,7 @@ export function fromRow(row) {
   };
 }
 
-// A seed product (src/data/catalogue-seed.js) -> a row without id/timestamps.
+// A seed product (src/data/catalogue-seed.js, used only by the server and scripts) -> a row without id/timestamps.
 export function toRow(p, sort = 0) {
   if (p.service) {
     return { slug: p.slug, name: p.name, category: p.category, kind: 'service', blurb: p.blurb, material: null, fabric: null, price_pence: Math.round(p.price * 100), config: { specs: p.specs }, images: [], published: true, available: true, sort };

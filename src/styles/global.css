@@ -3441,3 +3441,43 @@ main:focus {
   font-style: normal;
   margin: 0 0 0.75rem;
 }
+
+/* Public store: shop card description and product availability line */
+.card__blurb {
+  margin-top: 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pdp__avail {
+  margin: 0.6rem 0 0;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.pdp__avail::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+  background: #3aa76d;
+}
+
+/* Touch screens: colour swatches keep their look but get a 44px tap area. */
+@media (pointer: coarse) {
+  .swatch input {
+    inset: -5px;
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
+  }
+}

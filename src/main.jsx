@@ -9,15 +9,20 @@ import { CartProvider } from './store/cart.jsx';
 import { LogoProvider } from './store/logo.jsx';
 import App from './App.jsx';
 import { loadCatalogue } from './data/products.js';
+import CatalogueDown from './pages/CatalogueDown.jsx';
 
-await loadCatalogue();
+const catalogueLoaded = await loadCatalogue();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    {catalogueLoaded || window.location.hash.startsWith('#/admin') ? (
     <LogoProvider>
       <CartProvider>
         <App />
       </CartProvider>
     </LogoProvider>
+    ) : (
+      <CatalogueDown />
+    )}
   </StrictMode>,
 );

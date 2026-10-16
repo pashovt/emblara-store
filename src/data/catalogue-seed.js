@@ -37,14 +37,6 @@ const printPositions = (both) => [opt('Front'), opt('Back'), opt('Front + back',
 const chestPositions = [opt('Left chest'), opt('Centre chest'), opt('Large chest')];
 const poloPositions = [opt('Left chest'), opt('Large back')];
 
-export const categories = [
-  { id: 'all', label: 'All' },
-  { id: 'polos', label: 'Polos' },
-  { id: 'tees', label: 'T-shirts' },
-  { id: 'sweats', label: 'Hoodies & sweatshirts' },
-  { id: 'services', label: 'Services' },
-];
-
 export const seedProducts = [
   {
     slug: 'mens-polo', name: 'Men’s polo', category: 'polos',

@@ -36,7 +36,7 @@ export default function Shop({ category = 'all' }) {
         <p className="shop-grid__count">{list.length} products</p>
         <div className="grid">
           {list.map((p) => (
-            <ProductCard key={p.slug} product={p} />
+            <ProductCard key={p.slug} product={p} showBlurb />
           ))}
         </div>
       </section>

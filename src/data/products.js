@@ -1,16 +1,17 @@
-// The storefront catalogue. The merchant's products come from /api/products
-// (loadCatalogue, called once before the app renders). If the API is not
-// reachable, for example a static preview, the built-in seed range is used.
+// The storefront catalogue. Everything comes from /api/products (loadCatalogue, called once
+// before the app renders), which returns ONLY products that are published AND available.
+// Nothing is bundled into the browser, so there is no list to fall back to: a draft,
+// unpublished or unavailable product is simply never present here, and a direct link to
+// one renders "not found".
 //
-// `products`, `bySlug` and `categories` are exported as live objects and are
-// refilled in place, so every page that imports them sees the loaded range.
+// `products`, `bySlug` are exported as live objects and are refilled in place, so every
+// page that imports them sees the loaded range.
 //
-// Prices here are for DISPLAY. The order total is always recalculated on the
-// server from the stored product data (server/checkout.js).
+// Prices here are for DISPLAY. The order total is always recalculated on the server from the
+// stored product data (server/checkout.js).
 
-import { fromRow, toRow } from '../lib/catalogue.js';
+import { categories, fromRow } from '../lib/catalogue.js';
 import { unitPrice } from '../lib/pricing.js';
-import { seedProducts, categories } from './catalogue-seed.js';
 import aiShots from './ai-shots.json';
 
 export { categories };
@@ -41,25 +42,20 @@ export function applyCatalogue(list) {
   });
 }
 
-// Seed products as the API would return them (id = slug, available, no photos).
-const seedAsApi = () => seedProducts.map((p, i) => fromRow({ ...toRow(p, i), id: p.slug }));
-
+// Resolves true when the live catalogue loaded (an empty shop is still a loaded shop).
 export async function loadCatalogue() {
   try {
-    const res = await fetch('/api/products', { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(5000) });
+    const res = await fetch('/api/products', { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
     const data = res.ok && res.headers.get('content-type')?.includes('json') ? await res.json() : null;
     if (Array.isArray(data?.products)) {
       applyCatalogue(data.products.map((row) => fromRow(row)));
-      return 'api';
+      return true;
     }
   } catch {
-    /* fall through to the seed range */
+    /* handled below */
   }
-  applyCatalogue(seedAsApi());
-  return 'seed';
+  return false;
 }
-
-applyCatalogue(seedAsApi());
 
 // Short fabric tag for a colour, e.g. '100% cotton' or '50/50 cotton-poly'.
 export const materialFor = (product, colour) => product.materialByColour?.[colour] ?? product.material;

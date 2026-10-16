@@ -24,7 +24,8 @@ export default function App() {
   // New page: jump to top (or to a home section), then let ScrollTrigger
   // re-measure once the new layout has painted.
   useEffect(() => {
-    document.title = titles[route.page] ?? 'EMBLARA';
+    // The product page sets its own title (product name).
+    if (route.page !== 'product') document.title = titles[route.page] ?? 'EMBLARA';
     if (route.section) {
       requestAnimationFrame(() => scrollToId(route.section));
     } else {
