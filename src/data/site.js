@@ -5,7 +5,7 @@
 export const site = {
   brand: 'EMBLARA',
   tagline: 'Branded clothing for business & teams',
-  demoNotice: 'Concept store demo — products, prices and images are illustrative. No orders are taken.',
+  demoNotice: 'Demo store — product images are illustrative. Payments use a Stripe test or demo flow until the live keys are added.',
   line: 'Made to order with your logo, embroidered or printed.',
   currency: 'GBP',
 };

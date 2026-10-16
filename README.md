@@ -117,3 +117,28 @@ Deploy anywhere static (Vercel preset: Vite, output `dist`). Routing uses `#/` h
 | Logo upload, clean-up, storage | `src/store/logo.jsx`, `src/lib/logo-clean.js`, panel in `src/components/Chrome.jsx` |
 | Theme colours | "Themes" block at the end of `src/styles/global.css` |
 | Payment hook | `placeOrder()` in `src/pages/Checkout.jsx` |
+
+## Store backend (branch `feat/store-backend-demo`)
+
+The storefront now sits on a small backend: real products, guest checkout through Stripe Checkout, a verified payment webhook, and a Store Dashboard for the merchant. The browser, the bag and the displayed prices are **not** authoritative for money.
+
+**Run it:** `npm install`, copy `.env.example` to `.env.development.local` and fill in the demo values (random `ADMIN_SESSION_SECRET`, `DEMO_STAFF_EMAIL`, `DEMO_STAFF_PASSWORD`, `DEMO_WEBHOOK_SECRET`), then `npm run dev`. With no Neon or Stripe variables set it runs fully offline: data in `.data/store.json` (git-ignored), and a clearly labelled demo payment page stands in for Stripe Checkout. The demo page delivers a webhook event signed the same way Stripe signs it, through the same handler. `npm test` runs the server tests.
+
+| Piece | Where |
+|---|---|
+| Customer path: shop → product → bag → `#/checkout` → Stripe → `#/order-success` | `src/pages/*`, `server/payments.js` |
+| Merchant path: `#/admin` (sign in, Orders, Products) | `src/pages/Admin.jsx`, `server/admin.js`, `server/auth.js` |
+| One `/api/*` entry (Vite dev middleware and a Vercel function) | `server/router.js`, `api/router.js` + `vercel.json` rewrite |
+| Tables, RLS, roles, photo bucket (Neon project `emblara-store`) | `db/migrations/001_emblara_store.sql`, `neon.ts`, `docs/neon-database.md` |
+| First merchant (script run once by the owner, hidden password prompt) | `npm run db:create-staff` |
+| Seed the launch range / check the database rules | `npm run seed` (only when empty) / `npm run db:check` |
+
+**Price authority.** `/api/checkout` accepts product id, finish, colour, size, logo position, quantity (plus logo file name and notes) and nothing about money. `server/checkout.js` validates every option against the stored product, rejects unpublished or unavailable products, and recomputes the order with the same `src/lib/pricing.js` model the shop uses for display. The Stripe session is created for exactly that amount.
+
+**Orders.** A pending order and its lines are stored before the Stripe redirect. It becomes `paid` only in `processWebhook`: the signature is verified on the raw body, the paid amount and currency must equal the stored order, and a replay is a no-op. Order lines snapshot product name, options, quantity and amounts, so a later price change never alters a paid order. Payment and fulfilment are separate columns: `payment_status` (`pending` / `paid` / `expired`) and `fulfillment_status` (`unfulfilled` / `processing` / `fulfilled`). The dashboard shows only paid orders, as Paid → Processing → Fulfilled, one step forward and nothing else.
+
+**Stock.** A product is `available` or not; the merchant flips it in the dashboard and checkout enforces it. There are no quantities.
+
+**Going live.** Follow `docs/neon-database.md`: the Neon project, schema and bucket exist; run `npm run db:create-staff`, set the two role URLs, the `AWS_*` variables, Stripe and `ADMIN_SESSION_SECRET` in Vercel, and point a Stripe webhook at `/api/stripe-webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.expired`. A Vercel deployment with no Neon role URLs refuses to start the store (it never falls back to the local file or the demo payment page).
+
+**Known limits of this demo.** The customer's logo file never leaves their browser (the order records its file name; the "send it after ordering" flow is still to build). The dashboard prices garments from supplier costs, as the existing model does, so editing a product means editing costs, sizes and positions, not typing a retail price. Delivery of confirmation emails is excluded from version 1; Stripe's own receipt is the only email. Live Stripe has not been run against a real account; the Neon path is tested end to end (see `npm run db:check`).

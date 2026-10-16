@@ -1,75 +1,63 @@
 import { useMemo, useState } from 'react';
+import { bySlug } from '../data/products.js';
 import { leadView } from '../data/placements.js';
 import { deliveryNote } from '../data/site.js';
 import { totalsFor, useCart } from '../store/cart.jsx';
-import { gbp, scrollToY } from '../lib/utils.js';
+import { gbp } from '../lib/utils.js';
 import { ProductImage } from '../components/ui.jsx';
 
-// Demo checkout: validates the form and shows a confirmation, but takes no
-// payment and sends nothing. Replace placeOrder() with a real payment flow.
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
-
-const empty = { email: '', name: '', company: '', phone: '', line1: '', line2: '', city: '', postcode: '', notes: '' };
-
-function validate(v) {
-  const e = {};
-  if (!EMAIL.test(v.email.trim())) e.email = 'Enter an email address like name@business.co.uk.';
-  if (!v.name.trim()) e.name = 'Enter your full name.';
-  if (!v.line1.trim()) e.line1 = 'Enter the first line of the address.';
-  if (!v.city.trim()) e.city = 'Enter a town or city.';
-  if (!POSTCODE.test(v.postcode.trim())) e.postcode = 'Enter a UK postcode like S72 8JB.';
-  return e;
-}
-
-async function placeOrder() {
-  return { ref: `DEMO-${Math.random().toString(36).slice(2, 7).toUpperCase()}`, charged: false };
-}
+// Checkout. The bag is sent to /api/checkout as product ids, options and
+// quantities ONLY. The server prices it from the stored product data, saves a
+// pending order, and returns a Stripe Checkout URL for exactly that amount.
+// Stripe collects the delivery address and takes payment; the order becomes
+// "paid" only when Stripe's signed webhook reaches the server.
 
 export default function Checkout() {
-  const { items, clear } = useCart();
-  const [values, setValues] = useState(empty);
-  const [errors, setErrors] = useState({});
+  const { items, dropProducts, notice, dismissNotice } = useCart();
   const [artwork, setArtwork] = useState('later');
-  const [done, setDone] = useState(null);
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const totals = useMemo(() => totalsFor(items), [items]);
 
-  const set = (k) => (e) => setValues((v) => ({ ...v, [k]: e.target.value }));
-
-  const onSubmit = async (e) => {
+  const onPay = async (e) => {
     e.preventDefault();
-    const found = validate(values);
-    setErrors(found);
-    const first = Object.keys(found)[0];
-    if (first) {
-      document.getElementById(`co-${first}`)?.focus();
-      return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((i) => ({ productId: bySlug[i.slug].id, method: i.method, colour: i.colour, size: i.size, position: i.position, qty: i.qty, logoName: i.logoName })),
+          artwork,
+          notes,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data.productIds?.length) {
+        // Stale bag: the merchant made something unavailable after it was added.
+        dropProducts(data.productIds);
+        setBusy(false);
+        return;
+      }
+      if (!res.ok || !data.url) throw new Error(data.error || 'Checkout is not available right now. Please try again.');
+      window.location.assign(data.url);
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
     }
-    const result = await placeOrder();
-    setDone({ ...result, totals, values });
-    clear();
-    scrollToY(0, true);
   };
-
-  if (done) {
-    return (
-      <div className="page page--checkout">
-        <section className="confirm" role="status">
-          <p className="eyebrow">Order {done.ref}</p>
-          <h1 className="h2">Demo order <em>prepared</em>.</h1>
-          <p className="confirm__note">This is a demo checkout. Nothing has been charged and no order has been sent.</p>
-          <p>In the live store, {done.values.name.split(' ')[0] || 'you'} would now receive an email at {done.values.email} with the order reference, followed by a digital proof to approve before production.</p>
-          <p className="confirm__total">Order total {gbp(done.totals.total)}</p>
-          <a className="pill pill--copper pill--lg" href="#/shop">Back to the shop</a>
-        </section>
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return (
       <div className="page page--checkout">
         <section className="confirm">
+          {notice && (
+            <p className="drawer__alert" role="status">
+              {notice} <button type="button" className="link-button" onClick={dismissNotice}>Dismiss</button>
+            </p>
+          )}
           <h1 className="h2">Your bag is <em>empty</em>.</h1>
           <p>Add some kit, then come back here to check out.</p>
           <a className="pill pill--copper pill--lg" href="#/shop">Browse the range</a>
@@ -78,56 +66,19 @@ export default function Checkout() {
     );
   }
 
-  const field = (k, label, props = {}) => (
-    <div className={`field${errors[k] ? ' field--error' : ''}`}>
-      <label htmlFor={`co-${k}`}>
-        {label}
-        {props.optional && <span> (optional)</span>}
-      </label>
-      <input
-        id={`co-${k}`}
-        value={values[k]}
-        onChange={set(k)}
-        aria-invalid={!!errors[k]}
-        aria-describedby={errors[k] ? `co-${k}-err` : undefined}
-        type={props.type ?? 'text'}
-        autoComplete={props.autoComplete}
-      />
-      {errors[k] && <p className="field__err" id={`co-${k}-err`}>{errors[k]}</p>}
-    </div>
-  );
-
   return (
     <div className="page page--checkout">
       <h1 className="checkout__title">Checkout</h1>
-      <div className="demo-banner" role="note">
-        Demo checkout — no payment is taken and nothing is sent.
-      </div>
+      {notice && (
+        <p className="drawer__alert" role="status">
+          {notice} <button type="button" className="link-button" onClick={dismissNotice}>Dismiss</button>
+        </p>
+      )}
       <div className="checkout">
-        <form className="checkout__form" onSubmit={onSubmit} noValidate>
+        <form className="checkout__form" onSubmit={onPay} noValidate>
           <fieldset className="co-block">
-            <legend><span>1</span> Contact</legend>
-            {field('email', 'Email', { type: 'email', autoComplete: 'email' })}
-            <div className="field-row">
-              {field('name', 'Full name', { autoComplete: 'name' })}
-              {field('company', 'Business name', { optional: true, autoComplete: 'organization' })}
-            </div>
-            {field('phone', 'Phone', { optional: true, type: 'tel', autoComplete: 'tel' })}
-          </fieldset>
-
-          <fieldset className="co-block">
-            <legend><span>2</span> Delivery address</legend>
-            {field('line1', 'Address line 1', { autoComplete: 'address-line1' })}
-            {field('line2', 'Address line 2', { optional: true, autoComplete: 'address-line2' })}
-            <div className="field-row">
-              {field('city', 'Town or city', { autoComplete: 'address-level2' })}
-              {field('postcode', 'Postcode', { autoComplete: 'postal-code' })}
-            </div>
-            <p className="co-hint">United Kingdom only in this demo. One delivery address per order.</p>
-          </fieldset>
-
-          <fieldset className="co-block">
-            <legend><span>3</span> Delivery</legend>
+            <legend><span>1</span> Delivery and payment</legend>
+            <p className="co-hint">You enter your email, delivery address and card on the next page, which is hosted by Stripe. United Kingdom delivery only. One address per order.</p>
             <div className="radio-card">
               <span className="radio-card__body">
                 <strong>Tracked UK delivery</strong>
@@ -138,7 +89,7 @@ export default function Checkout() {
           </fieldset>
 
           <fieldset className="co-block">
-            <legend><span>4</span> Your logo</legend>
+            <legend><span>2</span> Your logo</legend>
             <label className="radio-card">
               <input type="radio" name="artwork" value="later" checked={artwork === 'later'} onChange={() => setArtwork('later')} />
               <span className="radio-card__body"><strong>I’ll send it after ordering</strong><em>We email you a secure upload link with your order confirmation.</em></span>
@@ -149,36 +100,15 @@ export default function Checkout() {
             </label>
             <div className="field">
               <label htmlFor="co-notes">Notes for the proof <span>(optional)</span></label>
-              <textarea id="co-notes" rows="3" value={values.notes} onChange={set('notes')} placeholder="Thread colours, names under the logo, deadline…" />
+              <textarea id="co-notes" rows="3" maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Thread colours, names under the logo, deadline…" />
             </div>
           </fieldset>
 
-          <fieldset className="co-block co-block--payment">
-            <legend><span>5</span> Payment</legend>
-            <p className="co-hint">Payments are not connected in this demo. These fields are disabled and nothing is collected.</p>
-            <div className="pay-methods" aria-hidden="true">
-              <span>Card</span><span>Apple Pay</span><span>Google Pay</span><span>Pay by invoice (business)</span>
-            </div>
-            <div className="field">
-              <label htmlFor="co-card">Card number</label>
-              <input id="co-card" disabled placeholder="Disabled in demo" />
-            </div>
-            <div className="field-row">
-              <div className="field">
-                <label htmlFor="co-exp">Expiry</label>
-                <input id="co-exp" disabled placeholder="MM / YY" />
-              </div>
-              <div className="field">
-                <label htmlFor="co-cvc">Security code</label>
-                <input id="co-cvc" disabled placeholder="•••" />
-              </div>
-            </div>
-          </fieldset>
-
-          <button type="submit" className="pill pill--copper pill--lg pill--block">
-            Place demo order · {gbp(totals.total)}
+          {error && <p className="field__err co-error" role="alert">{error}</p>}
+          <button type="submit" className="pill pill--copper pill--lg pill--block" disabled={busy}>
+            {busy ? 'Taking you to Stripe…' : `Pay securely · ${gbp(totals.total)}`}
           </button>
-          <p className="co-hint co-hint--center">By placing the order you’d agree to approve a proof before production. Demo: nothing is charged.</p>
+          <p className="co-hint co-hint--center">The final amount is calculated again on our server when you pay. By paying you agree to approve a proof before production.</p>
         </form>
 
         <aside className="summary" aria-label="Order summary">

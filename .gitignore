@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 .vercel
 .env*
+
+# local demo database and uploads
+.data
+
+!.env.example
+.neon

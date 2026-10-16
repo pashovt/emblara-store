@@ -64,7 +64,8 @@ export default function Home() {
   }, []);
 
   const featured = ['mens-polo', 'womens-polo', 'printed-polo', 'heavy-cotton-tee', 'logo-hoodie', 'crew-sweatshirt']
-    .map((s) => products.find((p) => p.slug === s));
+    .map((s) => products.find((p) => p.slug === s))
+    .filter(Boolean);
 
   return (
     <div ref={root}>
@@ -123,7 +124,7 @@ export default function Home() {
           <footer>Every order gets a digital proof first</footer>
         </blockquote>
         <div className="gallery__row">
-          {gallery.map((g) => (
+          {gallery.filter((g) => bySlug[g.slug]).map((g) => (
             <a key={g.caption} className="gallery__item" href={`#/product/${g.slug}`} style={{ '--col': g.col, '--span': g.span, '--drop': `${g.drop}rem` }} data-speed={g.speed}>
               <span className="gallery__cap">{g.caption}</span>
               <Garment product={bySlug[g.slug]} view={g.view} position={g.position} />

@@ -264,7 +264,7 @@ export function LogoPanel() {
 
 // ---------- bag drawer ----------
 export function CartDrawer() {
-  const { open, setOpen, totals, setQty, remove } = useCart();
+  const { open, setOpen, totals, setQty, remove, clear, notice, dismissNotice } = useCart();
   const panel = useRef(null);
 
   useEffect(() => {
@@ -304,6 +304,11 @@ export function CartDrawer() {
 
         {totals.lines.length === 0 ? (
           <div className="drawer__empty">
+            {notice && (
+              <p className="drawer__alert" role="status">
+                {notice} <button type="button" className="link-button" onClick={dismissNotice}>Dismiss</button>
+              </p>
+            )}
             <p>Your bag is empty.</p>
             <a className="pill pill--copper" href="#/shop" onClick={() => setOpen(false)}>
               Browse the range
@@ -311,6 +316,11 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
+            {notice && (
+              <p className="drawer__alert" role="status">
+                {notice} <button type="button" className="link-button" onClick={dismissNotice}>Dismiss</button>
+              </p>
+            )}
             <p className="drawer__free">Tracked UK delivery is included in every price</p>
             <ul className="drawer__lines">
               {totals.lines.map((l) => (
@@ -345,10 +355,11 @@ export function CartDrawer() {
                 <span>Subtotal</span>
                 <span>{gbp(totals.subtotal)}</span>
               </p>
-              <p className="drawer__note">Delivery is included. Proof sent before production.</p>
+              <p className="drawer__note">Delivery is included. Proof sent before production. The final price is confirmed at checkout.</p>
               <a className="pill pill--copper pill--block" href="#/checkout" onClick={() => setOpen(false)}>
                 Checkout
               </a>
+              <button type="button" className="link-button drawer__clear" onClick={clear}>Clear bag</button>
             </div>
           </>
         )}

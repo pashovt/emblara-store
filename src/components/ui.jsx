@@ -111,7 +111,19 @@ export function Garment({ product, colour, view = 'model-front', position, class
 }
 
 // ---------- product image: garment photo, or a tile for services ----------
+// Products the merchant added with their own photos (dashboard uploads) show
+// those photos instead of the built-in model shots. Views are 'img-0', 'img-1'...
+const imageIndex = (view) => Number(/^img-(\d+)$/.exec(view ?? '')?.[1] ?? 0);
+
 export function ProductImage({ product, colour, view, position, className = '', eager }) {
+  if (product.images?.length) {
+    const src = product.images[Math.min(imageIndex(view), product.images.length - 1)];
+    return (
+      <div className={`garment garment--upload ${className}`}>
+        <img className="garment__photo" src={src} alt={product.name} loading={eager ? 'eager' : 'lazy'} decoding="async" draggable="false" />
+      </div>
+    );
+  }
   if (product.service) {
     return (
       <div className={`pimg pimg--placeholder ${className}`} role="img" aria-label={product.name}>
@@ -126,13 +138,15 @@ export function ProductImage({ product, colour, view, position, className = '', 
 }
 
 // ---------- product card ----------
-export function ProductCard({ product }) {
+export function ProductCard({ product, showBlurb = false }) {
+  const uploaded = product.images?.length > 0;
+  const swaps = uploaded ? product.images.length > 1 : !product.service;
   return (
     <a className="card" href={`#/product/${product.slug}`}>
-      <div className={`card__media${product.service ? '' : ' card__media--swap'}`}>
-        <ProductImage product={product} view={AI_VIEW} />
-        {!product.service && <ProductImage product={product} view="flat-front" className="card__alt" />}
-        {product.material && <span className="card__badge">{materialFor(product, product.colours[0].name)}</span>}
+      <div className={`card__media${swaps ? ' card__media--swap' : ''}`}>
+        <ProductImage product={product} view={uploaded ? 'img-0' : AI_VIEW} />
+        {swaps && <ProductImage product={product} view={uploaded ? 'img-1' : 'flat-front'} className="card__alt" />}
+        {!product.available ? <span className="card__badge card__badge--out">Unavailable</span> : product.material && <span className="card__badge">{materialFor(product, product.colours[0].name)}</span>}
       </div>
       <div className="card__body">
         <div className="card__row">
@@ -141,6 +155,7 @@ export function ProductCard({ product }) {
             {!product.service && <span className="card__from">from</span>} {gbp(product.price)}
           </span>
         </div>
+        {showBlurb && product.blurb && <p className="card__blurb">{product.blurb}</p>}
         <div className="card__row card__row--meta">
           <span className="card__method">{product.method}</span>
           {product.colours.length > 0 && (
