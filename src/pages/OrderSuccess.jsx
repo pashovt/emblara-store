@@ -46,14 +46,14 @@ export default function OrderSuccess() {
           <>
             <p className="eyebrow">Order {state.number}</p>
             <h1 className="h2">Thank you. Your order is <em>paid</em>.</h1>
-            <p>We’ve received {gbp(state.total_pence / 100)}. Stripe emails your receipt, and we’ll send your digital proof to approve before anything is made. Delivery times are confirmed with the proof.</p>
+            <p>We’ve received {gbp(state.total_pence / 100)}. Keep your order number. We’ll send your digital proof to approve before anything is made, and confirm delivery times with it.</p>
           </>
         )}
         {state.phase === 'checking' && <h1 className="h2">Confirming your <em>payment</em>…</h1>}
         {state.phase === 'pending' && (
           <>
             <h1 className="h2">We’re still <em>confirming</em> your payment.</h1>
-            <p>If you completed payment, your order will appear on our side within a minute and your receipt will arrive from Stripe. If it doesn’t, reply to your receipt and we’ll sort it out.</p>
+            <p>If you completed payment, your order should appear on our side within a minute. This page can be reloaded to check again. If it still hasn’t updated, contact us with the time of your payment and we’ll sort it out.</p>
           </>
         )}
         {state.phase === 'unknown' && <h1 className="h2">No order to <em>show</em>.</h1>}

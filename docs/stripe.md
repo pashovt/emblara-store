@@ -26,7 +26,7 @@ Session and PaymentIntent both carry `metadata`: `order_id`, `order_number`, `so
 
 ## Becoming `paid`
 
-Only `POST /api/stripe-webhook` can do it: the signature is verified on the raw body with `STRIPE_WEBHOOK_SECRET`, the event must be `checkout.session.completed` (or `async_payment_succeeded`) with `payment_status = paid`, and the amount and currency must match. Duplicates are no-ops. `checkout.session.expired` marks the order `expired`.
+The primary path is `POST /api/stripe-webhook`; the thank-you page's status check is a second path that reads the session straight from Stripe's API (secret key, server side) and applies it through the same rules, so the page does not depend on webhook timing or on the endpoint existing yet. The webhook: the signature is verified on the raw body with `STRIPE_WEBHOOK_SECRET`, the event must be `checkout.session.completed` (or `async_payment_succeeded`) with `payment_status = paid`, and the amount and currency must match. Duplicates are no-ops. `checkout.session.expired` marks the order `expired`.
 
 ## Environment variables
 
@@ -44,3 +44,7 @@ Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
 ## Webhook endpoint (to do once the store is deployed)
 
 Stripe dashboard (sandbox), Developers, Webhooks, add endpoint `https://<your-domain>/api/stripe-webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET` in Vercel. The endpoint must be publicly reachable, so it cannot sit behind Vercel deployment protection.
+
+## Receipts and emails
+
+This store sends no email in version 1. Stripe's own customer receipt is a separate Stripe setting (Dashboard, Settings, Customer emails, "Successful payments"), and in **test mode Stripe does not send receipts to customers**, so a test payment never produces an email. The thank-you page therefore makes no promise of one. Emailing the order confirmation and the proof is a later feature.

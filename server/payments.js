@@ -16,6 +16,7 @@ import { config } from './config.js';
 import { db, orderNumber } from './db.js';
 import { priceCart, lineDescription, cleanText } from './checkout.js';
 import { HttpError } from './http.js';
+import { withContext } from './context.js';
 
 const stripeClient = () => new Stripe(config().stripeKey || 'sk_test_demo_key_not_used_for_network_calls');
 
@@ -113,6 +114,14 @@ export async function processWebhook(rawBody, signature) {
   if (event.type !== 'checkout.session.completed' && event.type !== 'checkout.session.async_payment_succeeded') return { received: true, ignored: true };
   if (s.payment_status !== 'paid') return { received: true, waiting: true };
 
+  return completePaidSession(s);
+}
+
+// Marks the order for a PAID Checkout Session as paid. Called by the verified webhook, and by
+// the thank-you page's server-side check (orderStatus), which reads the session straight from
+// Stripe with the secret key. Either way the same rules apply: known session, still pending,
+// and the paid amount and currency must equal the amount WE stored.
+async function completePaidSession(s) {
   const order = await db().getOrder({ sessionId: s.id });
   if (!order) throw new HttpError(400, 'Unknown checkout session.');
   if (order.payment_status !== 'pending') return { received: true, duplicate: true };
@@ -180,11 +189,27 @@ export async function demoPay(sessionId, f, siteOrigin) {
   return { url: `${siteOrigin}/?session_id=${sessionId}#/order-success` };
 }
 
-// What the "thank you" page may know: only paid-or-not, by the session id the
-// buyer was redirected with. No personal data.
+// What the "thank you" page may know: only paid-or-not, by the session id the buyer was
+// redirected with. No personal data.
+//
+// If the order is still pending and real Stripe is configured, ask Stripe directly (secret key,
+// server side) whether that session was paid, and if so apply it through the same rules as the
+// webhook. The page therefore never depends on webhook timing, and the browser still decides
+// nothing: the answer comes from Stripe's API, and the amount must match our stored order.
 export async function orderStatus(sessionId) {
   if (typeof sessionId !== 'string' || sessionId.length < 10 || sessionId.length > 200) throw new HttpError(400, 'Bad session.');
-  const o = await db().getOrder({ sessionId });
+  let o = await db().getOrder({ sessionId });
   if (!o) throw new HttpError(404, 'Not found.');
+  if (o.payment_status === 'pending' && !config().demoPayments && sessionId.startsWith('cs_')) {
+    try {
+      const session = await stripeClient().checkout.sessions.retrieve(sessionId);
+      if (session.payment_status === 'paid') {
+        await withContext({ flow: 'webhook' }, () => completePaidSession(session));
+        o = await db().getOrder({ sessionId });
+      }
+    } catch (err) {
+      console.error('[order-status] could not confirm with Stripe:', err.message);
+    }
+  }
   return { number: o.number, paid: o.payment_status === 'paid', total_pence: o.amount_total_pence };
 }
