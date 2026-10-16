@@ -16,6 +16,7 @@ import { config } from './config.js';
 import { db, orderNumber } from './db.js';
 import { priceCart, lineDescription, cleanText } from './checkout.js';
 import { HttpError } from './http.js';
+import { site } from '../src/data/site.js';
 
 const stripeClient = () => new Stripe(config().stripeKey || 'sk_test_demo_key_not_used_for_network_calls');
 
@@ -74,6 +75,7 @@ export async function startCheckout({ items, notes, artwork }, siteOrigin) {
         ),
         shipping_address_collection: { allowed_countries: ['GB'] },
         phone_number_collection: { enabled: true },
+        custom_text: { submit: { message: `Questions about your order? Email ${site.supportEmail}.` } },
         expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
         success_url: `${siteOrigin}/?session_id={CHECKOUT_SESSION_ID}#/order-success`,
         cancel_url: `${siteOrigin}/#/checkout`,

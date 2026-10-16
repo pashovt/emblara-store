@@ -379,6 +379,9 @@ export function Footer() {
         <div>
           <p className="footer__tag">{site.tagline}</p>
           <p className="footer__partner">{site.line}</p>
+          <p className="footer__partner">
+            Questions? <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>
+          </p>
         </div>
         <nav className="footer__nav" aria-label="Footer">
           <a href="#/shop">Shop all</a>

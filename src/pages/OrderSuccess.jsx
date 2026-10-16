@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCart } from '../store/cart.jsx';
 import { gbp } from '../lib/utils.js';
+import { site } from '../data/site.js';
 
 // Where Stripe sends the buyer after paying. Whether the order is paid is
 // decided by the server (it only changes on Stripe's signed webhook), so this
@@ -53,7 +54,7 @@ export default function OrderSuccess() {
         {state.phase === 'pending' && (
           <>
             <h1 className="h2">We’re still <em>confirming</em> your payment.</h1>
-            <p>If you completed payment, your order should appear on our side within a minute. This page can be reloaded to check again. If it still hasn’t updated, contact us with the time of your payment and we’ll sort it out.</p>
+            <p>If you completed payment, your order should appear on our side within a minute. This page can be reloaded to check again. If it still hasn’t updated, email <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> with the time of your payment and we’ll sort it out.</p>
           </>
         )}
         {state.phase === 'unknown' && <h1 className="h2">No order to <em>show</em>.</h1>}

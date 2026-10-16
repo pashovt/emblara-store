@@ -8,6 +8,8 @@ export const site = {
   demoNotice: 'Demo store — product images are illustrative. Payments use a Stripe test or demo flow until the live keys are added.',
   line: 'Made to order with your logo, embroidered or printed.',
   currency: 'GBP',
+  // The one address for customer correspondence. The site and the Stripe page both read it from here.
+  supportEmail: 'support@emblara.co.uk',
 };
 
 export const nav = [
