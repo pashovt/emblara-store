@@ -4,6 +4,7 @@
 //   npm run db:check
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
+import { strictSsl } from '../server/pg-url.js';
 import { ownerClient } from './lib/db-owner.mjs';
 
 const results = [];
@@ -14,7 +15,7 @@ const check = (name, ok, detail = '') => {
 
 // Run SQL as a role inside a rolled-back transaction with the given context.
 async function as(url, ctx, fn) {
-  const c = new pg.Client({ connectionString: url });
+  const c = new pg.Client({ connectionString: strictSsl(url) });
   await c.connect();
   try {
     await c.query('begin');

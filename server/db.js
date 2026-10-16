@@ -17,6 +17,7 @@ import pg from 'pg';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { config } from './config.js';
 import { context } from './context.js';
+import { strictSsl } from './pg-url.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const orderNumber = () => 'EM-' + [...randomBytes(6)].map((b) => ALPHABET[b % ALPHABET.length]).join('');
@@ -29,7 +30,7 @@ const FULFILMENTS = ['unfulfilled', 'processing', 'fulfilled'];
 // ---------------------------------------------------------------- Postgres
 const pools = new Map();
 const poolFor = (url) => {
-  if (!pools.has(url)) pools.set(url, new pg.Pool({ connectionString: url, max: 5 }));
+  if (!pools.has(url)) pools.set(url, new pg.Pool({ connectionString: strictSsl(url), max: 5 }));
   return pools.get(url);
 };
 

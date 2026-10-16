@@ -2,11 +2,12 @@
 // Uses the direct (unpooled) URL from `neon env pull`. The store server never uses it.
 import fs from 'node:fs';
 import pg from 'pg';
+import { strictSsl } from '../../server/pg-url.js';
 
 export async function ownerClient() {
   const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL_UNPOOLED is not set. Run with: node --env-file=.env.local <script>');
-  const client = new pg.Client({ connectionString: url });
+  const client = new pg.Client({ connectionString: strictSsl(url) });
   await client.connect();
   return client;
 }

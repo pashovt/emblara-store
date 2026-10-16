@@ -1,6 +1,6 @@
 # EMBLARA store demo (Gelato launch range)
 
-Demo storefront for EMBLARA with a "virtual fitting room" hero. Browse, configure, add to bag and check out. **The checkout is a demo: no payment is taken and nothing is sent.**
+Storefront and store backend for EMBLARA: a "virtual fitting room" hero, browse, configure, add to bag, pay with Stripe Checkout, and a staff-only Store Dashboard at `#/admin`. Live at https://emblara-store.vercel.app, backed by Neon Postgres and Neon Object Storage. **Stripe is in test mode** (the Emblara sandbox) until the live key is added: use test card `4242 4242 4242 4242`, and no real money moves. See the "Store backend" section below, `docs/neon-database.md` and `docs/stripe.md`.
 
 Updated 9 October 2026 to match the current plan in `05-Business-Plan/Pricing/` and `02-Listings/Gelato/`. The folder name still says WeavesOfHeaven because it began as a mock-up of that range. It no longer contains any WoH product.
 
