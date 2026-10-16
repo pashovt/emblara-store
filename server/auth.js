@@ -1,5 +1,5 @@
-// Merchant sign-in. Staff sign in with email + password (Supabase Auth in
-// production; DEMO_STAFF_* locally), must be listed as authorised store staff,
+// Merchant sign-in. Staff sign in with email + password (checked against emblara.staff in
+// Postgres; DEMO_STAFF_* in the offline demo), must be an active staff row,
 // and get a signed, HttpOnly, SameSite=Strict session cookie. Every dashboard
 // route re-checks the cookie. There is no customer sign-in.
 
@@ -56,11 +56,11 @@ export async function requireStaff(req) {
   return { sub: data.sub, email: data.email };
 }
 
-// `sub` is the Supabase Auth user id (the demo store uses the demo email).
+// `sub` is the emblara.staff id (the offline demo uses the demo email).
 async function isAuthorised(sub) {
   const cfg = config();
-  if (!cfg.supabase) return !!cfg.demoStaff.email && same(sub, cfg.demoStaff.email);
-  return db().isStaff(sub);
+  if (!cfg.neon) return !!cfg.demoStaff.email && same(sub, cfg.demoStaff.email);
+  return db().staffActive(sub);
 }
 
 // Throttle guessing: 6 failures per 10 minutes per address + IP (best effort,
@@ -86,7 +86,7 @@ export async function login(email, password, ip) {
   };
   const cfg = config();
 
-  if (!cfg.supabase) {
+  if (!cfg.neon) {
     // Hash both sides first so the comparison is constant-time regardless of length.
     const h = (s) => scryptSync(s, 'emblara-demo', 32);
     const okPw = !!cfg.demoStaff.password && timingSafeEqual(h(pw), h(cfg.demoStaff.password));
@@ -94,14 +94,9 @@ export async function login(email, password, ip) {
     return { sub: e, email: e };
   }
 
-  const res = await fetch(`${cfg.supabase.url}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: cfg.supabase.anon || cfg.supabase.key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: e, password: pw }),
-  });
-  if (!res.ok) throw deny();
-  const user = (await res.json()).user;
-  // Signed in is not the same as staff: the same login pool serves other businesses.
-  if (!user?.id || !(await db().isStaff(user.id))) throw deny();
-  return { sub: user.id, email: e };
+  // The password is checked inside Postgres (emblara.staff_login); a signed-in person who is
+  // not a row in emblara.staff gets nothing.
+  const staffId = await db().staffLogin(e, pw);
+  if (!staffId) throw deny();
+  return { sub: staffId, email: e };
 }

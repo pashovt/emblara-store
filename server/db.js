@@ -1,18 +1,22 @@
-// Data access. One interface, two backends: Supabase (PostgREST over fetch,
-// service-role key, server only) and a local JSON file for the offline demo.
-// The browser never talks to the database. RLS is on in Supabase as well, so even
-// a leaked anon key can read only published, available products.
+// Data access. One interface, two backends: Neon Postgres (pg, two least-privilege
+// roles) with Neon Object Storage for photos, and a local JSON file for the offline demo.
+// The browser never talks to the database.
 //
-// Shared Supabase project: this store uses its own schema (default `emblara`,
-// selected with the Accept-Profile / Content-Profile headers) and its own Storage
-// bucket (default `emblara-products`).
+// Postgres backend: every statement runs in a transaction that first sets
+//   emblara.flow / emblara.staff_id   (from server/context.js)
+// and the row-level-security policies in db/migrations/001_emblara_store.sql check them.
+// Public catalogue reads use a SEPARATE read-only role, so a visitor's request can never
+// reach orders or unpublished products, whatever the application code does.
 
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { toRow } from '../src/lib/catalogue.js';
 import { seedProducts } from '../src/data/catalogue-seed.js';
+import pg from 'pg';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { config } from './config.js';
+import { context } from './context.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const orderNumber = () => 'EM-' + [...randomBytes(6)].map((b) => ALPHABET[b % ALPHABET.length]).join('');
@@ -22,81 +26,139 @@ const now = () => new Date().toISOString();
 // Filter values are fulfillment states.
 const FULFILMENTS = ['unfulfilled', 'processing', 'fulfilled'];
 
-// ---------------------------------------------------------------- Supabase
-function supabase({ url, key, schema, bucket }) {
-  const call = async (p, { method = 'GET', body, headers = {} } = {}) => {
-    const res = await fetch(`${url}${p}`, {
-      method,
-      headers: { apikey: key, Authorization: `Bearer ${key}`, ...headers },
-      body,
-    });
-    if (!res.ok) throw new Error(`Supabase ${method} ${p.split('?')[0]} failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
-    return res;
-  };
-  const rest = async (p, { method = 'GET', body, prefer = 'return=representation' } = {}) => {
-    const res = await call(`/rest/v1/${p}`, {
-      method,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json', Prefer: prefer, 'Accept-Profile': schema, 'Content-Profile': schema },
-    });
-    return res.status === 204 ? null : res.json();
-  };
-  const eq = (v) => `eq.${encodeURIComponent(v)}`;
-  const one = (rows) => rows?.[0] ?? null;
-  const publicPrefix = `${url}/storage/v1/object/public/${bucket}/`;
+// ---------------------------------------------------------------- Postgres
+const pools = new Map();
+const poolFor = (url) => {
+  if (!pools.has(url)) pools.set(url, new pg.Pool({ connectionString: url, max: 5 }));
+  return pools.get(url);
+};
+
+const PRODUCT_COLS = ['slug', 'name', 'category', 'kind', 'blurb', 'material', 'fabric', 'price_pence', 'config', 'images', 'published', 'available', 'sort'];
+const JSONB = new Set(['config', 'images']);
+const ORDER_SET = new Set(['payment_status', 'fulfillment_status', 'paid_at', 'stripe_session_id', 'stripe_payment_intent', 'email', 'customer_name', 'phone', 'shipping']);
+const ORDER_WHEN = new Set(['payment_status', 'fulfillment_status']);
+
+function postgres({ appUrl, publicUrl, bucket, endpoint, region }) {
+  const base = `${endpoint}/${bucket}/`;
+  const toUrl = (key) => (key.startsWith('http') ? key : `${base}${key}`);
+  const toKey = (url) => (url.startsWith(base) ? url.slice(base.length) : url);
+  const outProduct = (r) => (r ? { ...r, images: (r.images ?? []).map(toUrl) } : r);
+
+  // One transaction, with the request context handed to the RLS policies.
+  async function tx(url, fn) {
+    const { flow, staffId } = context();
+    const client = await poolFor(url).connect();
+    try {
+      await client.query('begin');
+      await client.query("select set_config('emblara.flow', $1, true), set_config('emblara.staff_id', $2, true)", [flow ?? '', staffId ?? '']);
+      const out = await fn(client);
+      await client.query('commit');
+      return out;
+    } catch (err) {
+      await client.query('rollback').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+  const app = (fn) => tx(appUrl, fn);
+
+  const s3 = new S3Client({ region, endpoint, forcePathStyle: true }); // credentials: AWS_* env
 
   return {
-    kind: 'supabase',
-    imagePrefixes: () => [publicPrefix],
-    // publicOnly = what a visitor may see: published AND available (same rule as the RLS policy).
+    kind: 'postgres',
+    imagePrefixes: () => [`${base}products/`],
+
     async listProducts({ publicOnly } = {}) {
-      return rest(`products?select=*&order=sort.asc,name.asc${publicOnly ? '&published=eq.true&available=eq.true' : ''}`);
+      if (publicOnly) {
+        const { rows } = await tx(publicUrl, (c) =>
+          // No WHERE needed: this role can only ever see published AND available rows (RLS).
+          c.query('select id, slug, name, category, kind, blurb, material, fabric, price_pence, config, images, available, sort from emblara.products order by sort, name'),
+        );
+        return rows.map((r) => outProduct({ ...r, published: true }));
+      }
+      return (await app((c) => c.query('select * from emblara.products order by sort, name'))).rows.map(outProduct);
     },
     async getProduct(id) {
-      return one(await rest(`products?select=*&id=${eq(id)}`));
+      if (!/^[0-9a-f-]{36}$/i.test(String(id))) return null;
+      return outProduct((await app((c) => c.query('select * from emblara.products where id = $1', [id]))).rows[0] ?? null);
     },
     async saveProduct(row, id) {
-      if (id) return one(await rest(`products?id=${eq(id)}`, { method: 'PATCH', body: row }));
-      return one(await rest('products', { method: 'POST', body: row }));
-    },
-    async seedIfEmpty() {
-      const have = await rest('products?select=id&limit=1');
-      if (have.length) return false;
-      await rest('products', { method: 'POST', body: seedProducts.map((p, i) => ({ ...toRow(p, i), published: true })) });
-      return true;
-    },
-    async createOrder(order, items) {
-      const created = one(await rest('orders', { method: 'POST', body: order }));
-      try {
-        await rest('order_items', { method: 'POST', body: items.map((i) => ({ ...i, order_id: created.id })), prefer: 'return=minimal' });
-      } catch (err) {
-        // Roll back our own half-written order (a pending row we just created).
-        await rest(`orders?id=${eq(created.id)}&payment_status=eq.pending`, { method: 'DELETE', prefer: 'return=minimal' }).catch(() => {});
-        throw err;
+      const data = { ...row, images: (row.images ?? []).map(toKey) };
+      const cols = PRODUCT_COLS.filter((k) => k in data);
+      const vals = cols.map((k) => (JSONB.has(k) ? JSON.stringify(data[k]) : data[k]));
+      const cast = (k, i) => `$${i + 1}${JSONB.has(k) ? '::jsonb' : ''}`;
+      if (id) {
+        const set = cols.map((k, i) => `${k} = ${cast(k, i)}`).join(', ');
+        const r = await app((c) => c.query(`update emblara.products set ${set} where id = $${cols.length + 1} returning *`, [...vals, id]));
+        return outProduct(r.rows[0] ?? null);
       }
-      return created;
+      const r = await app((c) => c.query(`insert into emblara.products (${cols.join(', ')}) values (${cols.map(cast).join(', ')}) returning *`, vals));
+      return outProduct(r.rows[0]);
+    },
+    // Seeding runs from scripts/seed-products.mjs with the owner connection.
+    async seedIfEmpty() {
+      return false;
+    },
+
+    // The order and its lines are saved in ONE transaction: both or neither.
+    async createOrder(order, items) {
+      return app(async (c) => {
+        const o = (
+          await c.query(
+            'insert into emblara.orders (number, currency, amount_total_pence, notes, artwork) values ($1,$2,$3,$4,$5) returning *',
+            [order.number, order.currency, order.amount_total_pence, order.notes ?? null, order.artwork ?? null],
+          )
+        ).rows[0];
+        for (const i of items) {
+          await c.query(
+            'insert into emblara.order_items (order_id, product_id, product_slug, product_name, options, quantity, unit_amount_pence, line_amount_pence) values ($1,$2,$3,$4,$5::jsonb,$6,$7,$8)',
+            [o.id, i.product_id, i.product_slug, i.product_name, JSON.stringify(i.options), i.quantity, i.unit_amount_pence, i.line_amount_pence],
+          );
+        }
+        return o;
+      });
     },
     async getOrder({ id, sessionId }) {
-      return one(await rest(`orders?select=*&${id ? `id=${eq(id)}` : `stripe_session_id=${eq(sessionId)}`}`));
+      if (id && !/^[0-9a-f-]{36}$/i.test(String(id))) return null;
+      const q = id ? ['select * from emblara.orders where id = $1', [id]] : ['select * from emblara.orders where stripe_session_id = $1', [sessionId]];
+      return (await app((c) => c.query(...q))).rows[0] ?? null;
     },
     async orderItems(orderId) {
-      return rest(`order_items?select=*&order_id=${eq(orderId)}&order=created_at.asc`);
+      return (await app((c) => c.query('select * from emblara.order_items where order_id = $1 order by created_at', [orderId]))).rows;
     },
     // `when` makes the update conditional (compare-and-set), e.g. { payment_status: 'pending' }.
     async patchOrder(id, patch, when = {}) {
-      const cond = Object.entries(when).map(([k, v]) => `&${k}=${eq(v)}`).join('');
-      return one(await rest(`orders?id=${eq(id)}${cond}`, { method: 'PATCH', body: patch }));
+      const keys = Object.keys(patch).filter((k) => ORDER_SET.has(k));
+      const conds = Object.keys(when).filter((k) => ORDER_WHEN.has(k));
+      const vals = [...keys.map((k) => (k === 'shipping' ? JSON.stringify(patch[k]) : patch[k])), id, ...conds.map((k) => when[k])];
+      const set = keys.map((k, i) => `${k} = $${i + 1}${k === 'shipping' ? '::jsonb' : ''}`).join(', ');
+      const where = ['id = $' + (keys.length + 1), ...conds.map((k, i) => `${k} = $${keys.length + 2 + i}`)].join(' and ');
+      return (await app((c) => c.query(`update emblara.orders set ${set} where ${where} returning *`, vals))).rows[0] ?? null;
     },
     async listOrders(fulfilments = FULFILMENTS) {
-      return rest(`orders?select=*&payment_status=eq.paid&fulfillment_status=in.(${fulfilments.join(',')})&order=paid_at.desc.nullslast&limit=200`);
+      return (
+        await app((c) => c.query("select * from emblara.orders where payment_status = 'paid' and fulfillment_status = any($1) order by paid_at desc nulls last limit 200", [fulfilments]))
+      ).rows;
     },
-    // Authorised staff: a row in <schema>.staff for this Supabase Auth user id.
-    async isStaff(userId) {
-      return (await rest(`staff?select=user_id&user_id=${eq(userId)}`)).length > 0;
+
+    // Staff. The password is checked inside Postgres; emblara.staff is unreadable to this role.
+    async staffLogin(email, password) {
+      return (await app((c) => c.query('select emblara.staff_login($1, $2) as id', [email, password]))).rows[0].id ?? null;
     },
+    async staffActive(staffId) {
+      if (!/^[0-9a-f-]{36}$/i.test(String(staffId))) return false;
+      const r = await tx(appUrl, async (c) => {
+        await c.query("select set_config('emblara.staff_id', $1, true)", [staffId]);
+        return c.query('select emblara.is_staff() as ok');
+      });
+      return r.rows[0].ok === true;
+    },
+
     async storeImage(buf, name, contentType) {
-      await call(`/storage/v1/object/${bucket}/${name}`, { method: 'POST', body: buf, headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000, immutable' } });
-      return `${publicPrefix}${name}`;
+      const key = `products/${name}`;
+      await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: buf, ContentType: contentType, CacheControl: 'public, max-age=31536000, immutable' }));
+      return toUrl(key);
     },
   };
 }
@@ -187,8 +249,11 @@ function local() {
           .sort((a, b) => (b.paid_at ?? b.created_at).localeCompare(a.paid_at ?? a.created_at)),
       );
     },
-    async isStaff() {
-      return false; // local mode signs in with DEMO_STAFF_* (see auth.js)
+    async staffLogin() {
+      return null; // local mode signs in with DEMO_STAFF_* (see auth.js)
+    },
+    async staffActive() {
+      return false;
     },
     async storeImage(buf, name) {
       await mkdir(path.join(dir, 'uploads'), { recursive: true });
@@ -205,9 +270,9 @@ let backend = null;
 let backendKey = '';
 export function db() {
   const cfg = config();
-  const key = cfg.supabase ? `${cfg.supabase.url}|${cfg.supabase.key}|${cfg.supabase.schema}|${cfg.supabase.bucket}` : 'local';
+  const key = cfg.neon ? `${cfg.neon.appUrl}|${cfg.neon.publicUrl}|${cfg.neon.bucket}|${cfg.neon.endpoint}` : 'local';
   if (!backend || backendKey !== key) {
-    backend = cfg.supabase ? supabase(cfg.supabase) : local();
+    backend = cfg.neon ? postgres(cfg.neon) : local();
     backendKey = key;
   }
   return backend;

@@ -9,19 +9,25 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "node --test tests/*.test.mjs",
-    "seed": "node scripts/seed-products.mjs"
+    "seed": "node --env-file=.env.local scripts/seed-products.mjs",
+    "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
+    "db:create-staff": "node --env-file=.env.local scripts/create-staff.mjs",
+    "db:check": "node --env-file=.env.local scripts/check-db-security.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "@fontsource-variable/mona-sans": "^5.3.0",
     "@fontsource/instrument-serif": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "gsap": "^3.15.0",
     "lenis": "^1.3.26",
+    "pg": "^8.23.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "stripe": "^23.0.0"
   },
   "devDependencies": {
+    "@neon/config": "^1.9.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

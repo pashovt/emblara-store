@@ -14,7 +14,8 @@ process.env.STORE_DATA_DIR = mkdtempSync(path.join(tmpdir(), 'emblara-store-'));
 process.env.DEMO_WEBHOOK_SECRET = 'whsec_test_secret';
 process.env.ADMIN_SESSION_SECRET = 'x'.repeat(40);
 delete process.env.STRIPE_SECRET_KEY;
-delete process.env.SUPABASE_URL;
+delete process.env.EMBLARA_APP_DATABASE_URL; // these tests use the local file store
+delete process.env.EMBLARA_PUBLIC_DATABASE_URL;
 delete process.env.VERCEL;
 
 const { db } = await import('../server/db.js');
