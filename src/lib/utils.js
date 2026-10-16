@@ -55,12 +55,13 @@ export function useTheme() {
 
 // ---------- hash router ----------
 // Routes: #/ (home), #/shop, #/shop/<category>, #/product/<slug>, #/checkout,
-// #/process and #/mockup (home sections).
+// #/process and #/mockup (home sections), #/order-success and the dashboard:
+// #/admin, #/admin/products[/<id>|/new], #/admin/orders[/<id>].
 const parse = () => {
   const parts = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-  const [page = 'home', param] = parts;
+  const [page = 'home', param, sub] = parts;
   if (page === 'process' || page === 'mockup') return { page: 'home', section: page };
-  return { page, param };
+  return { page, param, sub };
 };
 
 export function useRoute() {

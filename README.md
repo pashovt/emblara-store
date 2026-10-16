@@ -117,3 +117,27 @@ Deploy anywhere static (Vercel preset: Vite, output `dist`). Routing uses `#/` h
 | Logo upload, clean-up, storage | `src/store/logo.jsx`, `src/lib/logo-clean.js`, panel in `src/components/Chrome.jsx` |
 | Theme colours | "Themes" block at the end of `src/styles/global.css` |
 | Payment hook | `placeOrder()` in `src/pages/Checkout.jsx` |
+
+## Store backend (branch `feat/store-backend-demo`)
+
+The storefront now sits on a small backend: real products, guest checkout through Stripe Checkout, a verified payment webhook, and a Store Dashboard for the merchant. The browser, the bag and the displayed prices are **not** authoritative for money.
+
+**Run it:** `npm install`, copy `.env.example` to `.env.development.local` and fill in the demo values (random `ADMIN_SESSION_SECRET`, `DEMO_STAFF_EMAIL`, `DEMO_STAFF_PASSWORD`, `DEMO_WEBHOOK_SECRET`), then `npm run dev`. With no Supabase or Stripe variables set it runs fully offline: data in `.data/store.json` (git-ignored), and a clearly labelled demo payment page stands in for Stripe Checkout. The demo page delivers a webhook event signed the same way Stripe signs it, through the same handler. `npm test` runs the server tests.
+
+| Piece | Where |
+|---|---|
+| Customer path: shop → product → bag → `#/checkout` → Stripe → `#/order-success` | `src/pages/*`, `server/payments.js` |
+| Merchant path: `#/admin` (sign in, Orders, Products) | `src/pages/Admin.jsx`, `server/admin.js`, `server/auth.js` |
+| One `/api/*` entry (Vite dev middleware and a Vercel function) | `server/router.js`, `api/[...path].js` |
+| Tables, RLS, image bucket | `supabase/migrations/001_store.sql` |
+| Seed the launch range | `npm run seed` (only when the table is empty) |
+
+**Price authority.** `/api/checkout` accepts product id, finish, colour, size, logo position, quantity (plus logo file name and notes) and nothing about money. `server/checkout.js` validates every option against the stored product, rejects unpublished or unavailable products, and recomputes the order with the same `src/lib/pricing.js` model the shop uses for display. The Stripe session is created for exactly that amount.
+
+**Orders.** A pending order and its lines are stored before the Stripe redirect. It becomes `paid` only in `processWebhook`: the signature is verified on the raw body, the paid amount and currency must equal the stored order, and a replay is a no-op. Order lines snapshot product name, options, quantity and amounts, so a later price change never alters a paid order. Statuses: `pending_payment` (never shown to the merchant) → `paid` → `processing` → `fulfilled` (one step forward, nothing else), and `cancelled` when the Stripe session expires.
+
+**Stock.** A product is `available` or not; the merchant flips it in the dashboard and checkout enforces it. There are no quantities.
+
+**Going live.** Create a Supabase project, run the migration, add the owner to `store_staff` and to Supabase Auth, set the Supabase, Stripe and `ADMIN_SESSION_SECRET` variables in Vercel, and point a Stripe webhook at `/api/stripe-webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.expired`. A Vercel deployment with no Supabase refuses to start the store (it never falls back to the local file or the demo payment page).
+
+**Known limits of this demo.** The customer's logo file never leaves their browser (the order records its file name; the "send it after ordering" flow is still to build). The dashboard prices garments from supplier costs, as the existing model does, so editing a product means editing costs, sizes and positions, not typing a retail price. Delivery of confirmation emails is excluded from version 1; Stripe's own receipt is the only email. Supabase and live-Stripe paths are written but have not been run against real accounts.

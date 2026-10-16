@@ -5,12 +5,16 @@ import Home from './pages/Home.jsx';
 import Shop from './pages/Shop.jsx';
 import Product from './pages/Product.jsx';
 import Checkout from './pages/Checkout.jsx';
+import OrderSuccess from './pages/OrderSuccess.jsx';
+import Admin from './pages/Admin.jsx';
 import { scrollToId, scrollToY, useRoute, useSmoothScroll } from './lib/utils.js';
 
 const titles = {
-  home: 'EMBLARA — Branded Clothing Store (Demo)',
-  shop: 'Shop — EMBLARA (Demo)',
-  checkout: 'Checkout — EMBLARA (Demo)',
+  home: 'EMBLARA — Branded Clothing Store',
+  shop: 'Shop — EMBLARA',
+  checkout: 'Checkout — EMBLARA',
+  'order-success': 'Order confirmed — EMBLARA',
+  admin: 'Store Dashboard — EMBLARA',
 };
 
 export default function App() {
@@ -20,7 +24,7 @@ export default function App() {
   // New page: jump to top (or to a home section), then let ScrollTrigger
   // re-measure once the new layout has painted.
   useEffect(() => {
-    document.title = titles[route.page] ?? 'EMBLARA (Demo)';
+    document.title = titles[route.page] ?? 'EMBLARA';
     if (route.section) {
       requestAnimationFrame(() => scrollToId(route.section));
     } else {
@@ -30,10 +34,19 @@ export default function App() {
     return () => clearTimeout(id);
   }, [route.page, route.param, route.section]);
 
+  if (route.page === 'admin') {
+    return (
+      <main id="main" tabIndex={-1}>
+        <Admin route={route} />
+      </main>
+    );
+  }
+
   let page;
   if (route.page === 'shop') page = <Shop category={route.param} />;
   else if (route.page === 'product') page = <Product slug={route.param} />;
   else if (route.page === 'checkout') page = <Checkout />;
+  else if (route.page === 'order-success') page = <OrderSuccess />;
   else page = <Home />;
 
   return (

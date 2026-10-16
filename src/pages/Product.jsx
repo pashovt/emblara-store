@@ -94,7 +94,7 @@ function ProductView({ product }) {
     setPosition(label);
     setView(viewForPosition(product, colour, label));
   };
-  const views = viewsFor(product, colour);
+  const views = product.images?.length ? product.images.map((_, i) => `img-${i}`) : viewsFor(product, colour);
   // A colour may lack the AI back (or front): keep the same side when it does.
   const twin = { 'ai-back': 'model-back', 'model-back': 'ai-back', 'ai-front': 'model-front', 'model-front': 'ai-front', 'ai-front-alt': 'ai-front' };
   const shown = views.includes(view) ? view : views.includes(twin[view]) ? twin[view] : views[0];
@@ -108,6 +108,7 @@ function ProductView({ product }) {
 
   const onAdd = (e) => {
     e.preventDefault();
+    if (!product.available) return;
     if (!size) {
       setError('Choose a size to continue.');
       document.getElementById('size-group')?.focus();
@@ -126,14 +127,14 @@ function ProductView({ product }) {
           <div className="pdp__stage">
             <div className="pdp__thumbs" role="group" aria-label="Product views">
               {views.map((v) => (
-                <button key={v} type="button" className="pdp__thumb" aria-pressed={v === shown} onClick={() => setView(v)} aria-label={VIEW_LABELS[v]}>
+                <button key={v} type="button" className="pdp__thumb" aria-pressed={v === shown} onClick={() => setView(v)} aria-label={VIEW_LABELS[v] ?? `Photo ${Number(v.slice(4)) + 1}`}>
                   <ProductImage product={product} colour={colour} view={v} position={position} />
                 </button>
               ))}
             </div>
             <div className="pdp__main">
               <ProductImage product={product} colour={colour} view={shown} position={position} eager />
-              <span className="pdp__illustrative">Illustrative image</span>
+              {!product.images?.length && <span className="pdp__illustrative">Illustrative image</span>}
             </div>
           </div>
         </div>
@@ -207,8 +208,8 @@ function ProductView({ product }) {
               <input type="number" min="1" max="999" value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, Number(e.target.value) || 1)))} aria-label="Quantity" />
               <button type="button" onClick={() => setQty((q) => Math.min(999, q + 1))} aria-label="Increase quantity">+</button>
             </div>
-            <button type="submit" className="pill pill--copper pill--lg pdp__add">
-              Add to bag · {gbp(lineTotal)}
+            <button type="submit" className="pill pill--copper pill--lg pdp__add" disabled={!product.available}>
+              {product.available ? <>Add to bag · {gbp(lineTotal)}</> : 'Currently unavailable'}
             </button>
           </div>
 
@@ -271,8 +272,8 @@ function ServiceView({ product }) {
             <button type="button" className="link-button" onClick={() => setPanelOpen(true)}>{custom ? 'Change logo' : 'Add your logo'}</button>
           </p>
           <div className="pdp__buy">
-            <button type="button" className="pill pill--copper pill--lg pdp__add" onClick={() => add({ slug: product.slug, method: 'service', qty: 1, logoName: custom?.name ?? '' })}>
-              Add to bag · {gbp(product.price)}
+            <button type="button" className="pill pill--copper pill--lg pdp__add" disabled={!product.available} onClick={() => add({ slug: product.slug, method: 'service', qty: 1, logoName: custom?.name ?? '' })}>
+              {product.available ? <>Add to bag · {gbp(product.price)}</> : 'Currently unavailable'}
             </button>
           </div>
         </div>
