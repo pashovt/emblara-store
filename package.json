@@ -14,7 +14,8 @@
     "db:create-staff": "node --env-file=.env.local scripts/create-staff.mjs",
     "db:check": "node --env-file=.env.local scripts/check-db-security.mjs",
     "stripe:check": "node --env-file=.env.local scripts/check-stripe-checkout.mjs",
-    "stripe:order": "node --env-file=.env.local --env-file=.env.development.local scripts/stripe-test-order.mjs"
+    "stripe:order": "node --env-file=.env.local --env-file=.env.development.local scripts/stripe-test-order.mjs",
+    "stripe:webhook": "node --env-file=.env.local scripts/register-stripe-webhook.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",

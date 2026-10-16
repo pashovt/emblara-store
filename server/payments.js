@@ -108,7 +108,17 @@ export async function processWebhook(rawBody, signature) {
   // Stripe's API with the secret key (session plus line items), not taken from the request body.
   // The offline demo has no Stripe API, so there the locally signed event is used as is.
   const sessionId = event.data.object?.id;
-  const reread = async () => (config().demoPayments ? event.data.object : stripeClient().checkout.sessions.retrieve(sessionId, { expand: ['line_items'] }));
+  const reread = async () => {
+    if (config().demoPayments) return event.data.object;
+    try {
+      return await stripeClient().checkout.sessions.retrieve(sessionId, { expand: ['line_items'] });
+    } catch (err) {
+      // A session Stripe does not know is a bad event (400, no retry). Anything else is ours or
+      // Stripe's outage: let it surface as 500 so Stripe retries later.
+      if (err?.code === 'resource_missing' || err?.statusCode === 404) throw new HttpError(400, 'Unknown checkout session.');
+      throw err;
+    }
+  };
 
   if (event.type === 'checkout.session.expired') {
     const s = await reread();
