@@ -13,7 +13,7 @@ import { ProductImage } from '../components/ui.jsx';
 // "paid" only when Stripe's signed webhook reaches the server.
 
 export default function Checkout() {
-  const { items } = useCart();
+  const { items, dropProducts, notice, dismissNotice } = useCart();
   const [artwork, setArtwork] = useState('later');
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,6 +35,12 @@ export default function Checkout() {
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data.productIds?.length) {
+        // Stale bag: the merchant made something unavailable after it was added.
+        dropProducts(data.productIds);
+        setBusy(false);
+        return;
+      }
       if (!res.ok || !data.url) throw new Error(data.error || 'Checkout is not available right now. Please try again.');
       window.location.assign(data.url);
     } catch (err) {
@@ -47,6 +53,11 @@ export default function Checkout() {
     return (
       <div className="page page--checkout">
         <section className="confirm">
+          {notice && (
+            <p className="drawer__alert" role="status">
+              {notice} <button type="button" className="link-button" onClick={dismissNotice}>Dismiss</button>
+            </p>
+          )}
           <h1 className="h2">Your bag is <em>empty</em>.</h1>
           <p>Add some kit, then come back here to check out.</p>
           <a className="pill pill--copper pill--lg" href="#/shop">Browse the range</a>
@@ -58,6 +69,11 @@ export default function Checkout() {
   return (
     <div className="page page--checkout">
       <h1 className="checkout__title">Checkout</h1>
+      {notice && (
+        <p className="drawer__alert" role="status">
+          {notice} <button type="button" className="link-button" onClick={dismissNotice}>Dismiss</button>
+        </p>
+      )}
       <div className="checkout">
         <form className="checkout__form" onSubmit={onPay} noValidate>
           <fieldset className="co-block">

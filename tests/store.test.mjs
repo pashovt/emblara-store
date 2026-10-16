@@ -62,9 +62,10 @@ describe('price authority', () => {
   it('refuses unavailable and unpublished products', async () => {
     const input = (r, patch) => ({ kind: r.kind, slug: r.slug, name: r.name, category: r.category, blurb: r.blurb, material: r.material ?? '', fabric: r.fabric ?? '', specs: r.config.specs, ship: r.config.ship, colours: r.config.colours, methods: r.config.methods, images: [], published: r.published, available: r.available, sort: r.sort, ...patch });
     await saveProduct(input(polo, { available: false }), polo.id);
-    await assert.rejects(priceCart([line()]), /unavailable/);
+    // The refusal names the product so the browser can drop it from a stale bag.
+    await assert.rejects(priceCart([line()]), (err) => err.status === 409 && /unavailable/.test(err.message) && err.extra.productIds.includes(polo.id));
     await saveProduct(input(polo, { available: true, published: false }), polo.id);
-    await assert.rejects(priceCart([line()]), /no longer sold/);
+    await assert.rejects(priceCart([line()]), (err) => err.status === 409 && /no longer sold/.test(err.message) && err.extra.productIds.includes(polo.id));
     await saveProduct(input(polo, {}), polo.id);
     await priceCart([line()]);
   });

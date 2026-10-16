@@ -20,22 +20,25 @@ export async function priceCart(rawItems) {
 
   const resolved = [];
   const problems = [];
+  const refusedIds = [];
   for (const raw of rawItems) {
     const qty = Number(raw?.qty);
     if (!Number.isInteger(qty) || qty < 1 || qty > 999) throw new HttpError(400, 'Invalid quantity.');
     const row = typeof raw?.productId === 'string' ? await db().getProduct(raw.productId) : null;
     if (!row || !row.published) {
       problems.push('A product in your bag is no longer sold.');
+      refusedIds.push(String(raw?.productId));
       continue;
     }
     const product = fromRow(row);
     if (!product.available) {
       problems.push(`${product.name} is currently unavailable.`);
+      refusedIds.push(product.id);
       continue;
     }
     resolved.push({ raw, qty, product });
   }
-  if (problems.length) throw new HttpError(409, [...new Set(problems)].join(' '), { unavailable: true });
+  if (problems.length) throw new HttpError(409, [...new Set(problems)].join(' '), { unavailable: true, productIds: [...new Set(refusedIds)] });
 
   const garments = [];
   const lines = resolved.map(({ raw, qty, product }) => {
