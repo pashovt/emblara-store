@@ -69,6 +69,18 @@ describe('price authority', () => {
   });
 });
 
+describe('public catalogue', () => {
+  it('lists only published AND available products', async () => {
+    const slugs = async () => (await db().listProducts({ publicOnly: true })).map((p) => p.slug);
+    assert.ok((await slugs()).includes('mens-polo'));
+    await db().saveProduct({ available: false }, polo.id);
+    assert.ok(!(await slugs()).includes('mens-polo'));
+    await db().saveProduct({ available: true, published: false }, polo.id);
+    assert.ok(!(await slugs()).includes('mens-polo'));
+    await db().saveProduct({ available: true, published: true }, polo.id);
+  });
+});
+
 describe('payment and fulfilment', () => {
   it('cannot fulfil an order that was never paid', async () => {
     const { url } = await startCheckout({ items: [line()] }, 'http://localhost');

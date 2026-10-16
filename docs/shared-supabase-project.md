@@ -18,7 +18,7 @@ This document covers Emblara (`emblara` schema, `emblara-products` bucket). It i
 
 **Products.** `id`, `slug`, `name`, `category`, `kind` (garment or service), `blurb`, `material`, `fabric`, `price_pence` (services only), `config` (the supplier-cost model the shop prices garments from), `images`, `published`, `available`, `sort`, `created_at`, `updated_at`. No variants table, no inventory.
 
-**Publication.** `published` (draft until the merchant publishes) and `available` (the whole stock model). The anonymous role can read a row only when `published and available`, enforced by RLS and a column-level grant, not by the frontend. The shop API (service role) still lists published-but-unavailable products so the card can say "Unavailable"; the anonymous Supabase API cannot see them.
+**Publication.** `published` (draft until the merchant publishes) and `available` (the whole stock model). The anonymous role can read a row only when `published and available`, enforced by RLS and a column-level grant, not by the frontend. The shop API applies the same rule, so an unavailable product disappears from the shop and its product page. Checkout also refuses it if it is already in someone's bag.
 
 **Money.** Integer pence, GBP only (`currency check (currency = 'gbp')`). Order totals and line amounts are integers. Garment prices are computed server-side in whole pence from `config`; the browser never supplies an amount. `config` holds supplier costs in pounds as pricing-model inputs, not as Stripe amounts.
 

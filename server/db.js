@@ -48,8 +48,9 @@ function supabase({ url, key, schema, bucket }) {
   return {
     kind: 'supabase',
     imagePrefixes: () => [publicPrefix],
-    async listProducts({ publishedOnly } = {}) {
-      return rest(`products?select=*&order=sort.asc,name.asc${publishedOnly ? '&published=eq.true' : ''}`);
+    // publicOnly = what a visitor may see: published AND available (same rule as the RLS policy).
+    async listProducts({ publicOnly } = {}) {
+      return rest(`products?select=*&order=sort.asc,name.asc${publicOnly ? '&published=eq.true&available=eq.true' : ''}`);
     },
     async getProduct(id) {
       return one(await rest(`products?select=*&id=${eq(id)}`));
@@ -129,9 +130,9 @@ function local() {
   return {
     kind: 'local',
     imagePrefixes: () => ['/api/uploads/'],
-    async listProducts({ publishedOnly } = {}) {
+    async listProducts({ publicOnly } = {}) {
       const { products } = await load();
-      return clone(products.filter((p) => !publishedOnly || p.published).sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)));
+      return clone(products.filter((p) => !publicOnly || (p.published && p.available)).sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)));
     },
     async getProduct(id) {
       return clone((await load()).products.find((p) => p.id === id));

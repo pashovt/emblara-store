@@ -35,7 +35,7 @@ export async function handle(req, res) {
         await db().seedIfEmpty();
         seeded = true;
       }
-      const rows = await db().listProducts({ publishedOnly: true });
+      const rows = await db().listProducts({ publicOnly: true });
       return send(res, 200, { products: rows.map(PUBLIC_FIELDS) }, { 'Cache-Control': 'public, max-age=0, s-maxage=15' });
     }
     if (route === 'POST /checkout') {
