@@ -35,6 +35,12 @@ const completed = (sessionId, amount, extra = {}) => ({
   data: { object: { id: sessionId, object: 'checkout.session', payment_status: 'paid', amount_total: amount, currency: 'gbp', payment_intent: 'pi_1', customer_details: { email: 'a@b.co', name: 'A B' }, collected_information: { shipping_details: { name: 'A B', address: { line1: '1 St', city: 'Leeds', postal_code: 'LS1 1AA', country: 'GB' } } }, ...extra } },
 });
 
+// A paid-event body the way Stripe sends it: with the order reference we attached at checkout.
+const paidEvent = async (session, amount, extra = {}) => {
+  const o = await db().getOrder({ sessionId: session });
+  return signed(completed(session, amount, { client_reference_id: o.id, metadata: { order_id: o.id }, ...extra }));
+};
+
 let polo;
 const line = (over = {}) => ({ productId: polo.id, method: 'embroidery', colour: polo.config.colours[0].name, size: 'M', position: 'Left chest', qty: 1, ...over });
 
@@ -99,15 +105,39 @@ describe('payment and fulfilment', () => {
   it('does not mark an order paid on an amount mismatch', async () => {
     const { url } = await startCheckout({ items: [line()] }, 'http://localhost');
     const session = new URL(url).searchParams.get('s');
-    await assert.rejects(processWebhook(...signed(completed(session, 1))), /mismatch/i);
+    await assert.rejects(processWebhook(...(await paidEvent(session, 1))), /Amount mismatch/);
     assert.equal((await db().getOrder({ sessionId: session })).payment_status, 'pending');
+  });
+
+  it('rejects a session that is not the one created for the order', async () => {
+    const { url, total_pence } = await startCheckout({ items: [line()] }, 'http://localhost');
+    const session = new URL(url).searchParams.get('s');
+    const order = await db().getOrder({ sessionId: session });
+    await assert.rejects(processWebhook(...signed(completed(session, total_pence, { client_reference_id: 'someone-elses-order', metadata: { order_id: 'x' } }))), /reference/i);
+    assert.equal((await db().getOrder({ sessionId: session })).payment_status, 'pending');
+    assert.equal(order.payment_status, 'pending');
+  });
+
+  it('an expired or unpaid checkout never becomes a paid order', async () => {
+    const { url } = await startCheckout({ items: [line()] }, 'http://localhost');
+    const session = new URL(url).searchParams.get('s');
+    const unpaid = await processWebhook(...(await paidEvent(session, 1, { payment_status: 'unpaid' })));
+    assert.equal(unpaid.waiting, true);
+    assert.equal((await db().getOrder({ sessionId: session })).payment_status, 'pending');
+    const expired = { id: 'evt_2', object: 'event', type: 'checkout.session.expired', data: { object: { id: session, object: 'checkout.session', status: 'expired' } } };
+    await processWebhook(...signed(expired));
+    assert.equal((await db().getOrder({ sessionId: session })).payment_status, 'expired');
+    const late = await processWebhook(...(await paidEvent(session, 1)));
+    assert.ok(late.duplicate || late.received);
+    assert.notEqual((await db().getOrder({ sessionId: session })).payment_status, 'paid');
+    assert.ok(!(await db().listOrders()).some((o) => o.stripe_session_id === session));
   });
 
   it('marks paid once, snapshots the order, and survives later price changes and replays', async () => {
     const { url, total_pence } = await startCheckout({ items: [line({ qty: 2 })], notes: 'thread: navy' }, 'http://localhost');
     const session = new URL(url).searchParams.get('s');
-    await processWebhook(...signed(completed(session, total_pence)));
-    const replay = await processWebhook(...signed(completed(session, total_pence)));
+    await processWebhook(...(await paidEvent(session, total_pence)));
+    const replay = await processWebhook(...(await paidEvent(session, total_pence)));
     assert.equal(replay.duplicate, true);
 
     const order = await db().getOrder({ sessionId: session });

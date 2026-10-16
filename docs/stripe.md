@@ -24,9 +24,16 @@ Session and PaymentIntent both carry `metadata`: `order_id`, `order_number`, `so
 - Delivery is included in every price, so there are no `shipping_options`. No local pickup is offered in the approved plan.
 - No tax is set: Emblara is not VAT registered. If that changes, enable Stripe Tax in the dashboard and set `automatic_tax` then; do not hardcode a rate.
 
-## Becoming `paid`
+## Becoming `paid` (webhook only)
 
-The primary path is `POST /api/stripe-webhook`; the thank-you page's status check is a second path that reads the session straight from Stripe's API (secret key, server side) and applies it through the same rules, so the page does not depend on webhook timing or on the endpoint existing yet. The webhook: the signature is verified on the raw body with `STRIPE_WEBHOOK_SECRET`, the event must be `checkout.session.completed` (or `async_payment_succeeded`) with `payment_status = paid`, and the amount and currency must match. Duplicates are no-ops. `checkout.session.expired` marks the order `expired`.
+`POST /api/stripe-webhook` is the only thing that can mark an order paid. The thank-you page is interface only: it reads our order state and changes nothing, so a closed browser, a replayed redirect or a forged success URL cannot create or pay an order.
+
+1. The raw request body is read first and the `Stripe-Signature` header is verified with `STRIPE_WEBHOOK_SECRET` before anything else. A bad signature is a 400 and nothing else happens.
+2. The event only names the Checkout Session. The server then **re-reads the session and its line items from Stripe's API** with the secret key; nothing is taken from the request body.
+3. For `checkout.session.completed` and `checkout.session.async_payment_succeeded` with `payment_status = paid`, the session must be the one created for the order (`client_reference_id` and `metadata.order_id`), its line items must add up to `amount_total`, and the amount and currency must equal what the server stored. Then the order becomes `paid` and the customer, phone and UK address Stripe collected are saved. Fulfilment starts as `unfulfilled`, which the dashboard shows as Paid.
+4. **No duplicates:** the order already exists (created pending at checkout, with its item snapshot). The Stripe Checkout Session id is stored on it with a database UNIQUE constraint, and the update is a compare-and-set on `payment_status = 'pending'`. A retried or replayed event finds the order already paid and does nothing.
+
+Events handled: `checkout.session.completed`, `checkout.session.async_payment_succeeded` (pay), `checkout.session.expired` (marks the order `expired`, after confirming with Stripe). Failed asynchronous payments are ignored on purpose: the session stays open and can be retried, and the order stays pending. A pending, expired or failed order is never shown to the merchant and never counts as a sale.
 
 ## Environment variables
 
