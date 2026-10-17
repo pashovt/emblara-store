@@ -151,21 +151,23 @@ function Orders() {
       {state.error && <p className="adm__error">{state.error}</p>}
       {!state.loading && !orders.length && <p className="adm__muted">No orders here yet. An order appears once Stripe confirms its payment.</p>}
       {orders.length > 0 && (
-        <table className="adm__table adm__table--cards">
-          <thead><tr><th>Order</th><th>Paid</th><th>Customer</th><th>Delivery</th><th>Total</th><th>Status</th></tr></thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.id} className={o.status === 'paid' ? 'is-attention' : undefined}>
-                <td data-label="Order"><a href={`#/admin/orders/${o.id}`}><strong>{o.number}</strong></a></td>
-                <td data-label="Paid">{when(o.paid_at)}</td>
-                <td data-label="Customer">{o.customer_name}<small>{o.email}</small></td>
-                <td data-label="Delivery">{o.fulfilment_method}<small>{o.city}</small></td>
-                <td data-label="Total">{pounds(o.amount_total_pence)}</td>
-                <td data-label="Status"><span className={`adm__badge adm__badge--${o.status}`}>{STATUS[o.status]}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="adm__scroll">
+          <table className="adm__table adm__table--cards">
+            <thead><tr><th>Order</th><th>Paid</th><th>Customer</th><th>Delivery</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody>
+              {orders.map((o) => (
+                <tr key={o.id} className={o.status === 'paid' ? 'is-attention' : undefined}>
+                  <td data-label="Order"><a href={`#/admin/orders/${o.id}`}><strong>{o.number}</strong></a></td>
+                  <td data-label="Paid">{when(o.paid_at)}</td>
+                  <td data-label="Customer">{o.customer_name}<small>{o.email}</small></td>
+                  <td data-label="Delivery">{o.fulfilment_method}<small>{o.city}</small></td>
+                  <td data-label="Total">{pounds(o.amount_total_pence)}</td>
+                  <td data-label="Status"><span className={`adm__badge adm__badge--${o.status}`}>{STATUS[o.status]}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
