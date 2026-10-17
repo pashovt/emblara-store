@@ -1200,13 +1200,23 @@ main:focus {
   gap: 0.4rem 2.5rem;
 }
 
-.footer__nav a {
+.footer__nav a,
+.footer__nav button {
   text-decoration: none;
   color: var(--on-dark-dim);
   padding: 0.25rem 0;
 }
 
-.footer__nav a:hover {
+.footer__nav button {
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.footer__nav a:hover,
+.footer__nav button:hover {
   color: var(--copper-lit);
 }
 
@@ -4031,4 +4041,79 @@ textarea {
   .adm__method legend label {
     min-height: 44px;
   }
+}
+
+/* ---------- analytics consent + privacy page ---------- */
+.consent {
+  position: fixed;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: var(--pad);
+  z-index: 150;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  max-width: 62rem;
+  margin-inline: auto;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bone-2);
+  color: var(--text);
+  box-shadow: 0 12px 40px rgba(13, 21, 38, 0.25);
+}
+
+.consent__text {
+  flex: 1 1 22rem;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.consent__text a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.consent__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.page--legal {
+  max-width: 46rem;
+  margin-inline: auto;
+  padding: calc(var(--header-h) + 3rem) var(--pad) 6rem;
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.page--legal h2 {
+  margin: 1.5rem 0 0;
+  font-size: 1.15rem;
+}
+
+.page--legal p,
+.page--legal li {
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.page--legal ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  list-style: disc;
+}
+
+.page--legal a {
+  color: inherit;
+}
+
+.page--legal code {
+  font-family: var(--f-mono);
+  font-size: 0.9em;
 }

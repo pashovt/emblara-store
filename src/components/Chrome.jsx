@@ -5,6 +5,7 @@ import { leadView } from '../data/placements.js';
 import { useCart } from '../store/cart.jsx';
 import { useLogo } from '../store/logo.jsx';
 import { gbp, setScrollLock, useTheme } from '../lib/utils.js';
+import { openConsent } from '../lib/analytics.js';
 import { Mark, ProductImage } from './ui.jsx';
 
 // ---------- header ----------
@@ -408,6 +409,8 @@ export function Footer() {
           <a href="#/product/logo-clean-up">Logo clean-up</a>
           <a href="#/process">How it works</a>
           <a href="#/checkout">Checkout</a>
+          <a href="#/privacy">Privacy &amp; cookies</a>
+          <button type="button" onClick={openConsent}>Cookie settings</button>
         </nav>
         <ThemeChooser />
       </div>

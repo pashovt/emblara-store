@@ -7,6 +7,9 @@ import Product from './pages/Product.jsx';
 import Checkout from './pages/Checkout.jsx';
 import OrderSuccess from './pages/OrderSuccess.jsx';
 import Admin from './pages/Admin.jsx';
+import Privacy from './pages/Privacy.jsx';
+import ConsentBanner from './components/ConsentBanner.jsx';
+import { pageview, useConsent } from './lib/analytics.js';
 import { scrollToId, scrollToY, useRoute, useSmoothScroll } from './lib/utils.js';
 
 const titles = {
@@ -14,12 +17,14 @@ const titles = {
   shop: 'Shop — EMBLARA',
   checkout: 'Checkout — EMBLARA',
   'order-success': 'Order confirmed — EMBLARA',
+  privacy: 'Privacy & cookies — EMBLARA',
   admin: 'Store Dashboard — EMBLARA',
 };
 
 export default function App() {
   const route = useRoute();
   useSmoothScroll();
+  const consent = useConsent();
 
   // New page: jump to top (or to a home section), then let ScrollTrigger
   // re-measure once the new layout has painted.
@@ -35,6 +40,12 @@ export default function App() {
     return () => clearTimeout(id);
   }, [route.page, route.param, route.section]);
 
+  // Analytics page view, once per route and only with consent. Runs after the title
+  // effect above (and after Product's own), so the title it reports is already set.
+  useEffect(() => {
+    pageview();
+  }, [route.page, route.param, route.section, consent]);
+
   if (route.page === 'admin') {
     return (
       <main id="main" tabIndex={-1}>
@@ -48,6 +59,7 @@ export default function App() {
   else if (route.page === 'product') page = <Product slug={route.param} />;
   else if (route.page === 'checkout') page = <Checkout />;
   else if (route.page === 'order-success') page = <OrderSuccess />;
+  else if (route.page === 'privacy') page = <Privacy />;
   else page = <Home />;
 
   return (
@@ -62,6 +74,7 @@ export default function App() {
       <Footer />
       <CartDrawer />
       <LogoPanel />
+      <ConsentBanner />
     </>
   );
 }
