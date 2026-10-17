@@ -75,6 +75,8 @@ Sizes and locations follow `02-Listings/Gelato/00-Option-Rules.csv`. Anything th
 - **Photos** are Gelato catalogue previews, labelled illustrative. Replace them with sample photography when available (keep the four views and update the anchors in `placements.js`).
 - WoH can return as website supply only after a written agreement. Do not add WoH products or a partner credit before then.
 - Still to do for a real launch: payment provider, order emails, logo storage with the order (today it stays in the visitor's browser), privacy policy and terms, Clarity + UTM capture, and removing `noindex`.
+- **Owner action: the privacy page (`src/pages/Privacy.jsx`, route `#/privacy`) has placeholders.** Its "Who runs this site" line says the legal name, address and ICO registration status are "to be confirmed before launch". Fill those in once the owner confirms them (never claim registration or an exemption before then), add terms and refunds, and get solicitor review before the first paid launch.
+- Analytics: GA4 (`src/lib/analytics.js`) loads only after the visitor accepts the consent banner and sends one `page_view` per hash route with no query string. Custom events (`purchase`, `begin_checkout`, `add_to_cart`) are not built yet; use `track()` and guard `purchase` against test orders.
 
 ## Try-on hero (`src/components/TryOnHero.jsx`)
 
