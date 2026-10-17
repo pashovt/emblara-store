@@ -192,9 +192,15 @@ export default function TryOnHero() {
     go(active + (dx < 0 ? 1 : -1));
   };
 
+  // Once the visitor picks a garment themselves, the phone autoplay stops for good.
+  const pick = (target) => {
+    root.current.dataset.touched = '1';
+    go(target);
+  };
+
   const onKeyDown = (e) => {
-    if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); pick(active + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); pick(active - 1); }
   };
 
   const look = looks[active];
@@ -260,7 +266,7 @@ export default function TryOnHero() {
       </div>
 
       <div className="tryon__controls" role="group" aria-label="Choose a garment" onKeyDown={onKeyDown}>
-        <button type="button" className="tryon__arrow" onClick={() => go(active - 1)} aria-label="Previous garment">←</button>
+        <button type="button" className="tryon__arrow" onClick={() => pick(active - 1)} aria-label="Previous garment">←</button>
         <div className="tryon__dots">
           {looks.map((l, i) => (
             <button
@@ -269,12 +275,12 @@ export default function TryOnHero() {
               className="tryon__dot"
               aria-label={`${l.label}, ${l.colour}`}
               aria-current={i === active ? 'true' : undefined}
-              onClick={() => go(i)}
+              onClick={() => pick(i)}
               style={{ '--c': l.hex }}
             />
           ))}
         </div>
-        <button type="button" className="tryon__arrow" onClick={() => go(active + 1)} aria-label="Next garment">→</button>
+        <button type="button" className="tryon__arrow" onClick={() => pick(active + 1)} aria-label="Next garment">→</button>
       </div>
 
       <p className="tryon__hint" aria-hidden="true">Scroll to change the kit</p>
