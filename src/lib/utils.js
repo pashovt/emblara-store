@@ -105,8 +105,14 @@ export function scrollToId(id) {
   else el.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto' });
 }
 
+// While the bag or logo panel is open the page behind it cannot be scrolled, and
+// (via inert) cannot be reached with Tab or a screen reader either. The panels
+// themselves are siblings of these elements, so they stay usable.
 export function setScrollLock(locked) {
   if (lenis && locked) lenis.stop();
   else if (lenis) lenis.start();
   document.documentElement.style.overflow = locked ? 'hidden' : '';
+  document.querySelectorAll('.skip-link, .wordmark, .header, #main, .footer').forEach((el) => {
+    el.inert = locked;
+  });
 }

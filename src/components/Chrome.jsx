@@ -28,14 +28,21 @@ export function Header({ route }) {
     return () => window.removeEventListener('hashchange', close);
   }, []);
 
-  // Escape closes the phone menu, as it does the bag and logo panels.
+  // Escape or a tap anywhere outside closes the phone menu, as with the bag and logo panels.
   useEffect(() => {
     if (!menu) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') setMenu(false);
     };
+    const onOutside = (e) => {
+      if (!e.target.closest('#menu-panel, .header__menu')) setMenu(false);
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onOutside);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onOutside);
+    };
   }, [menu]);
 
   return (
@@ -58,14 +65,14 @@ export function Header({ route }) {
       </nav>
 
       <div className="header__right">
-        <button type="button" className="pill pill--logo" aria-label={mode === 'custom' && custom ? 'Your logo' : 'Add your logo'} onClick={() => setPanelOpen(true)}>
+        <button type="button" className="pill pill--logo" aria-label={mode === 'custom' && custom ? 'Your logo' : 'Add your logo'} onClick={() => { setMenu(false); setPanelOpen(true); }}>
           <span className="pill--logo__thumb" aria-hidden="true">
             {mode === 'custom' && custom ? <img src={custom.src} alt="" /> : <Mark />}
           </span>
           <span className="pill--logo__label">{mode === 'custom' && custom ? 'Your logo' : 'Add your logo'}</span>
         </button>
         <ThemeButton />
-        <button type="button" className="pill pill--bag" aria-label={`Bag, ${totals.count} items`} onClick={() => setOpen(true)}>
+        <button type="button" className="pill pill--bag" aria-label={`Bag, ${totals.count} items`} onClick={() => { setMenu(false); setOpen(true); }}>
           <BagIcon />
           <span>Bag</span>
           <span className="pill__count" aria-hidden="true">
@@ -177,8 +184,8 @@ export function LogoPanel() {
 
   useEffect(() => {
     if (!panelOpen) return undefined;
-    setScrollLock(true);
     const prev = document.activeElement;
+    setScrollLock(true);
     panel.current?.focus();
     const onKey = (e) => {
       if (e.key === 'Escape') setPanelOpen(false);
@@ -279,8 +286,8 @@ export function CartDrawer() {
 
   useEffect(() => {
     if (!open) return undefined;
-    setScrollLock(true);
     const prev = document.activeElement;
+    setScrollLock(true);
     panel.current?.focus();
     const onKey = (e) => {
       if (e.key === 'Escape') setOpen(false);
