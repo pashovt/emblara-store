@@ -9,7 +9,8 @@ import { demoPay, demoSession, orderStatus, processWebhook, startCheckout } from
 import * as admin from './admin.js';
 import { withContext } from './context.js';
 
-const PUBLIC_FIELDS = ({ id, slug, name, category, kind, blurb, material, fabric, price, config: c, images, available, sort }) => ({ id, slug, name, category, kind, blurb, material, fabric, price, config: c, images, available, sort });
+// price_pence is the column name; the shop page reads it (services have a fixed price, garments are null).
+const PUBLIC_FIELDS = ({ id, slug, name, category, kind, blurb, material, fabric, price_pence, config: c, images, available, sort }) => ({ id, slug, name, category, kind, blurb, material, fabric, price_pence, config: c, images, available, sort });
 
 let seeded = false;
 

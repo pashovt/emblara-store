@@ -1827,8 +1827,9 @@ main:focus {
   color: var(--copper-lit);
 }
 
-/* Six price breaks: two rows of three on phones. */
-@media (max-width: 560px) {
+/* Six price breaks: two rows of three on phones, and wherever the product page
+   is two columns but the info column is narrower than the six-across table. */
+@media (max-width: 560px), (min-width: 901px) and (max-width: 1199px) {
   .tiers,
   .tiers tbody {
     display: block;

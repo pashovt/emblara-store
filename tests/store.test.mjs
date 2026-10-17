@@ -191,3 +191,19 @@ describe('dashboard order list', () => {
     assert.ok(orders.every((o) => !('stripe_session_id' in o) && !('stripe_payment_intent' in o)), 'no Stripe internals in the list');
   });
 });
+
+describe('public product list', () => {
+  it('gives the shop page a real price for services (the page reads price_pence)', async () => {
+    const { handle } = await import('../server/router.js');
+    let body = '';
+    const res = { statusCode: 0, setHeader() {}, end(b) { body = b; } };
+    await handle({ method: 'GET', url: '/api/products', headers: { host: 'localhost' }, socket: {} }, res);
+    assert.equal(res.statusCode, 200);
+    const { products } = JSON.parse(body);
+    const service = products.find((p) => p.kind === 'service');
+    assert.ok(service, 'the clean-up service is in the public list');
+    const page = fromRow(service);
+    assert.ok(Number.isFinite(page.price) && page.price > 0, `service price shows as a number, got ${page.price}`);
+    assert.equal(page.price, 15);
+  });
+});
