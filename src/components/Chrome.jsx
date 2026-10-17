@@ -28,6 +28,16 @@ export function Header({ route }) {
     return () => window.removeEventListener('hashchange', close);
   }, []);
 
+  // Escape closes the phone menu, as it does the bag and logo panels.
+  useEffect(() => {
+    if (!menu) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenu(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menu]);
+
   return (
     <>
     {/* Outside <header> so its difference blend reaches the page and the
@@ -48,17 +58,17 @@ export function Header({ route }) {
       </nav>
 
       <div className="header__right">
-        <button type="button" className="pill pill--logo" onClick={() => setPanelOpen(true)}>
+        <button type="button" className="pill pill--logo" aria-label={mode === 'custom' && custom ? 'Your logo' : 'Add your logo'} onClick={() => setPanelOpen(true)}>
           <span className="pill--logo__thumb" aria-hidden="true">
             {mode === 'custom' && custom ? <img src={custom.src} alt="" /> : <Mark />}
           </span>
           <span className="pill--logo__label">{mode === 'custom' && custom ? 'Your logo' : 'Add your logo'}</span>
         </button>
         <ThemeButton />
-        <button type="button" className="pill pill--bag" onClick={() => setOpen(true)}>
+        <button type="button" className="pill pill--bag" aria-label={`Bag, ${totals.count} items`} onClick={() => setOpen(true)}>
           <BagIcon />
           <span>Bag</span>
-          <span className="pill__count" aria-label={`${totals.count} items`}>
+          <span className="pill__count" aria-hidden="true">
             {totals.count}
           </span>
         </button>
@@ -76,11 +86,11 @@ export function Header({ route }) {
 
       <div id="menu-panel" className="menu-panel" hidden={!menu}>
         {nav.map((n) => (
-          <a key={n.href} href={n.href}>
+          <a key={n.href} href={n.href} onClick={() => setMenu(false)}>
             {n.label}
           </a>
         ))}
-        <a href="#/checkout">Checkout</a>
+        <a href="#/checkout" onClick={() => setMenu(false)}>Checkout</a>
       </div>
     </header>
     </>

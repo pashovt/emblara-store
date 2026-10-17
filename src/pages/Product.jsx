@@ -210,7 +210,7 @@ function ProductView({ product }) {
           <div className="pdp__buy">
             <div className="stepper stepper--lg" aria-label="Quantity">
               <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
-              <input type="number" min="1" max="999" value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, Number(e.target.value) || 1)))} aria-label="Quantity" />
+              <input type="number" inputMode="numeric" min="1" max="999" value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, Number(e.target.value) || 1)))} aria-label="Quantity" />
               <button type="button" onClick={() => setQty((q) => Math.min(999, q + 1))} aria-label="Increase quantity">+</button>
             </div>
             <button type="submit" className="pill pill--copper pill--lg pdp__add" disabled={!product.available}>
