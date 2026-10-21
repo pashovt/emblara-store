@@ -18,8 +18,8 @@ Stock is optional per catalogue item. When tracked, staff can only adjust it thr
 
 ## Phase 3: sales and quotation requests
 
-The public quote request page is `#/request`. A request is stored only through the restricted portal role; the role has no direct table privileges. Staff can see requests, invoices and clients in Sales. Private quotation links use `#/q/<token>` and send the token in an HTTP header, not a URL query string. These routes are noindex and their API responses set `Referrer-Policy: no-referrer`.
+The public quote request page is `#/request`. A request is stored only through the restricted portal role; the role has no direct table privileges. Staff can create clients, draft invoices, add invoice lines, progress invoices from draft to sent to paid, and download a generated PDF. Each download stores a staff-only PDF copy against its invoice. Private quotation links use `#/q/<token>` and send the token in an HTTP header, not a URL query string. Tokens are SHA-256 hashed in the database, while the recoverable staff link is encrypted with `LINK_ENCRYPTION_KEY`. These routes are noindex and their API responses set `Referrer-Policy: no-referrer`.
 
 ## What is not built yet
 
-No customer portal route, sales record, support ticket, artwork file or production order exists yet.
+The full customer account portal, sales records, support tickets, artwork files and production orders are not built yet. Quotation email delivery is added with the email workflow phase; until then staff can copy the private link.

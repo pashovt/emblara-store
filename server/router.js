@@ -91,9 +91,13 @@ export async function handle(req, res) {
           case 'GET /admin/catalogue': return send(res, 200, await admin.listCatalogue());
           case 'GET /admin/sales': return send(res, 200, await sales.overview());
           case 'POST /admin/sales/clients': return send(res, 201, await sales.createClient(await readJson(req, 10_000)));
+          case 'POST /admin/sales/invoices': return send(res, 201, await sales.createInvoice(await readJson(req, 2_000)));
+          case 'POST /admin/sales/invoices/lines': return send(res, 200, await sales.addInvoiceLine(id, await readJson(req, 5_000)));
+          case 'POST /admin/sales/invoices/status': return send(res, 200, await sales.transitionInvoice(id, await readJson(req, 2_000)));
           case 'POST /admin/sales/quotes': return send(res, 201, await sales.createQuote((await readJson(req, 2_000)).request_id));
           case 'POST /admin/sales/quotes/lines': return send(res, 200, await sales.addQuoteLine(id, await readJson(req, 5_000)));
           case 'POST /admin/sales/quotes/issue': return send(res, 200, await sales.issueQuote(id, origin(req, cfg)));
+          case 'GET /admin/sales/invoice-pdf': { const document = await sales.invoicePdf(id); return send(res, 200, document.pdf, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${document.filename}"` }); }
           case 'POST /admin/catalogue/link': return send(res, 200, await admin.linkCatalogueProduct(await readJson(req, 5_000)));
           case 'POST /admin/catalogue/stock': return send(res, 200, await admin.recordStockMovement(await readJson(req, 5_000)));
           case 'GET /admin/settings': return send(res, 200, await admin.getBusinessProfile());

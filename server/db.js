@@ -183,9 +183,15 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
     async salesInvoices() { return (await app((c) => c.query("select i.id,i.number,i.status,i.total_pence,i.due_date,i.created_at,c.organisation_name from invoicing.invoices i join invoicing.clients c on c.id=i.client_id order by i.created_at desc"))).rows; },
     async salesClients() { return (await app((c) => c.query('select id, organisation_name, contact_name, email, archived, created_at from invoicing.clients order by organisation_name'))).rows; },
     async createSalesClient(input) { return (await app((c) => c.query('select invoicing.create_client($1::jsonb) as id', [JSON.stringify(input)]))).rows[0].id; },
+    async createInvoice(clientId, deposit) { return (await app((c) => c.query('select invoicing.create_invoice($1,$2) as id', [clientId, deposit]))).rows[0].id; },
+    async addInvoiceLine(invoiceId, line) { await app((c) => c.query('select invoicing.add_invoice_line($1,$2,$3,$4)', [invoiceId, line.description, line.quantity, line.unit_price_pence])); },
+    async transitionInvoice(invoiceId, status, reason) { return (await app((c) => c.query('select * from invoicing.invoice_transition($1,$2::invoicing.invoice_status,$3)', [invoiceId, status, reason]))).rows[0]; },
     async createQuote(requestId) { return (await app((c) => c.query('select quoting.create_quote($1) as id', [requestId]))).rows[0].id; },
     async addQuoteLine(quoteId, line) { await app((c) => c.query('select quoting.add_quote_line($1,$2,$3,$4)', [quoteId, line.description, line.quantity, line.unit_price_pence])); },
     async issueQuote(quoteId, token, ciphertext) { return (await app((c) => c.query('select * from quoting.issue_quote($1,$2,$3)', [quoteId, token, ciphertext]))).rows[0]; },
+    async invoicePdfData(invoiceId) { return (await app((c) => c.query("select i.*,c.organisation_name,c.contact_name,c.address_line1,c.address_line2,c.city,c.postcode,c.country from invoicing.invoices i join invoicing.clients c on c.id=i.client_id where i.id=$1", [invoiceId]))).rows[0] ?? null; },
+    async invoiceLines(invoiceId) { return (await app((c) => c.query('select description,quantity,unit_price_pence,line_total_pence from invoicing.invoice_lines where invoice_id=$1 order by line_no', [invoiceId]))).rows; },
+    async storeInvoicePdf(invoiceId, pdf) { return (await app((c) => c.query('select invoicing.store_invoice_pdf($1,$2::bytea) as id', [invoiceId, pdf]))).rows[0].id; },
 
     async storeImage(buf, name, contentType) {
       const key = `products/${name}`;
@@ -299,9 +305,15 @@ function local() {
     async salesInvoices() { throw new HttpError(503, 'The back office needs the database.'); },
     async salesClients() { throw new HttpError(503, 'The back office needs the database.'); },
     async createSalesClient() { throw new HttpError(503, 'The back office needs the database.'); },
+    async createInvoice() { throw new HttpError(503, 'The back office needs the database.'); },
+    async addInvoiceLine() { throw new HttpError(503, 'The back office needs the database.'); },
+    async transitionInvoice() { throw new HttpError(503, 'The back office needs the database.'); },
     async createQuote() { throw new HttpError(503, 'The back office needs the database.'); },
     async addQuoteLine() { throw new HttpError(503, 'The back office needs the database.'); },
     async issueQuote() { throw new HttpError(503, 'The back office needs the database.'); },
+    async invoicePdfData() { throw new HttpError(503, 'The back office needs the database.'); },
+    async invoiceLines() { throw new HttpError(503, 'The back office needs the database.'); },
+    async storeInvoicePdf() { throw new HttpError(503, 'The back office needs the database.'); },
     async storeImage(buf, name) {
       await mkdir(path.join(dir, 'uploads'), { recursive: true });
       await writeFile(path.join(dir, 'uploads', name), buf);
