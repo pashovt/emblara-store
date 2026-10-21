@@ -18,6 +18,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { config } from './config.js';
 import { context } from './context.js';
 import { strictSsl } from './pg-url.js';
+import { HttpError } from './http.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const orderNumber = () => 'EM-' + [...randomBytes(6)].map((b) => ALPHABET[b % ALPHABET.length]).join('');
@@ -39,7 +40,7 @@ const JSONB = new Set(['config', 'images']);
 const ORDER_SET = new Set(['payment_status', 'fulfillment_status', 'paid_at', 'stripe_session_id', 'stripe_payment_intent', 'email', 'customer_name', 'phone', 'shipping']);
 const ORDER_WHEN = new Set(['payment_status', 'fulfillment_status']);
 
-function postgres({ appUrl, publicUrl, bucket, endpoint, region }) {
+function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
   const base = `${endpoint}/${bucket}/`;
   const toUrl = (key) => (key.startsWith('http') ? key : `${base}${key}`);
   const toKey = (url) => (url.startsWith(base) ? url.slice(base.length) : url);
@@ -63,11 +64,16 @@ function postgres({ appUrl, publicUrl, bucket, endpoint, region }) {
     }
   }
   const app = (fn) => tx(appUrl, fn);
+  const portal = (fn) => {
+    if (!portalUrl) throw new HttpError(503, 'The back office needs the database.');
+    return tx(portalUrl, fn);
+  };
 
   const s3 = new S3Client({ region, endpoint, forcePathStyle: true }); // credentials: AWS_* env
 
   return {
     kind: 'postgres',
+    portal,
     imagePrefixes: () => [`${base}products/`],
 
     async listProducts({ publicOnly } = {}) {
@@ -192,6 +198,9 @@ function local() {
 
   return {
     kind: 'local',
+    async portal() {
+      throw new HttpError(503, 'The back office needs the database.');
+    },
     imagePrefixes: () => ['/api/uploads/'],
     async listProducts({ publicOnly } = {}) {
       const { products } = await load();
@@ -271,7 +280,7 @@ let backend = null;
 let backendKey = '';
 export function db() {
   const cfg = config();
-  const key = cfg.neon ? `${cfg.neon.appUrl}|${cfg.neon.publicUrl}|${cfg.neon.bucket}|${cfg.neon.endpoint}` : 'local';
+  const key = cfg.neon ? `${cfg.neon.appUrl}|${cfg.neon.publicUrl}|${cfg.neon.portalUrl}|${cfg.neon.bucket}|${cfg.neon.endpoint}` : 'local';
   if (!backend || backendKey !== key) {
     backend = cfg.neon ? postgres(cfg.neon) : local();
     backendKey = key;

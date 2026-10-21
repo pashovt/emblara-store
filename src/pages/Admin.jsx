@@ -1,22 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CATEGORIES, METHOD_IDS, fromRow } from '../lib/catalogue.js';
 import { unitPrice } from '../lib/pricing.js';
 import { gbp } from '../lib/utils.js';
+import { api, useLoad } from '../admin/api.js';
+import Navigation from '../admin/Navigation.jsx';
+import ComingSoon from '../admin/ComingSoon.jsx';
 
 // Store Dashboard. Everything the merchant does to products and orders goes
 // through /api/admin/*, which re-checks the signed session cookie on every call.
-
-async function api(path, { method = 'GET', body, raw } = {}) {
-  const res = await fetch(`/api/admin/${path}`, {
-    method,
-    headers: raw ? { 'content-type': raw.type } : body ? { 'content-type': 'application/json' } : {},
-    body: raw ?? (body ? JSON.stringify(body) : undefined),
-    credentials: 'same-origin',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error || 'Request failed.'), { status: res.status });
-  return data;
-}
 
 const STATUS = { paid: 'Paid', processing: 'Processing', fulfilled: 'Fulfilled' };
 const when = (iso) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '');
@@ -40,21 +31,19 @@ export default function Admin({ route }) {
   if (!email) return <Login onDone={setEmail} />;
   if (email === 'denied') return <NoAccess onSignOut={onSignOut} />;
 
-  const section = route.param === 'products' ? 'products' : 'orders';
+  const section = ['orders', 'sales', 'support', 'catalogue', 'products', 'settings'].includes(route.param) ? route.param : 'orders';
   return (
     <div className="adm">
       <header className="adm__bar">
         <strong className="adm__brand">Store Dashboard</strong>
-        <nav aria-label="Dashboard">
-          <a href="#/admin/orders" aria-current={section === 'orders' ? 'page' : undefined}>Orders</a>
-          <a href="#/admin/products" aria-current={section === 'products' ? 'page' : undefined}>Products</a>
-          <a href="#/shop">View shop</a>
-        </nav>
+        <Navigation section={section} />
+        <a className="adm__shop" href="#/shop">View shop</a>
         <span className="adm__who">{email} · <button type="button" className="link-button" onClick={onSignOut}>Sign out</button></span>
       </header>
       <div className="adm__body">
         {section === 'orders' && (route.sub ? <OrderDetail id={route.sub} /> : <Orders />)}
         {section === 'products' && (route.sub ? <ProductForm id={route.sub} /> : <Products />)}
+        {['sales', 'support', 'catalogue', 'settings'].includes(section) && <ComingSoon section={section[0].toUpperCase() + section.slice(1)} />}
       </div>
     </div>
   );
@@ -104,23 +93,6 @@ function Login({ onDone }) {
       </form>
     </div>
   );
-}
-
-// Loads from the API; a 401 means the session ended, so reload to the sign-in.
-function useLoad(path, deps = []) {
-  const [state, setState] = useState({ loading: true });
-  const reload = useCallback(() => {
-    setState((s) => ({ ...s, loading: true }));
-    api(path).then(
-      (data) => setState({ data }),
-      (error) => {
-        if (error.status === 401 || error.status === 403) window.location.reload();
-        setState({ error: error.message });
-      },
-    );
-  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(reload, [reload, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
-  return [state, reload];
 }
 
 // ----------------------------------------------------------------- orders
