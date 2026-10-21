@@ -77,6 +77,11 @@ export async function handle(req, res) {
         switch (route) {
           case 'GET /admin/me': return send(res, 200, { email: staff.email });
           case 'GET /admin/products': return send(res, 200, await admin.listProducts());
+          case 'GET /admin/catalogue': return send(res, 200, await admin.listCatalogue());
+          case 'POST /admin/catalogue/link': return send(res, 200, await admin.linkCatalogueProduct(await readJson(req, 5_000)));
+          case 'POST /admin/catalogue/stock': return send(res, 200, await admin.recordStockMovement(await readJson(req, 5_000)));
+          case 'GET /admin/settings': return send(res, 200, await admin.getBusinessProfile());
+          case 'POST /admin/settings': return send(res, 200, await admin.saveBusinessProfile(await readJson(req, 20_000)));
           case 'POST /admin/products': return send(res, 201, await admin.saveProduct(await readJson(req, 100_000)));
           case 'PUT /admin/products': return send(res, 200, await admin.saveProduct(await readJson(req, 100_000), id));
           case 'POST /admin/upload': return send(res, 201, await admin.uploadImage(await readBody(req, 4_000_000)));

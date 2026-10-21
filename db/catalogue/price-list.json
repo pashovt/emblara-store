@@ -1,0 +1,1237 @@
+{
+ "source": "Emblara-Pricing-Matrix.xlsx, Pricing matrix sheet, channel Website, prices include UK delivery and setup",
+ "generated": "from workbook values only",
+ "items": [
+  {
+   "code": "G18500",
+   "name": "Heavy Blend hoodie (Gildan 18500)",
+   "fit": "Unisex",
+   "active": true,
+   "colours": [
+    "White",
+    "Sport Grey",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "print": {
+     "supplierMethod": "DTG",
+     "baseLocation": "front",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 3323
+      },
+      {
+       "qty": 2,
+       "pence": 3066
+      },
+      {
+       "qty": 5,
+       "pence": 2912
+      },
+      {
+       "qty": 10,
+       "pence": 2860
+      },
+      {
+       "qty": 25,
+       "pence": 2829
+      },
+      {
+       "qty": 50,
+       "pence": 2819
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 260
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 500
+      },
+      {
+       "size": "4XL",
+       "surchargePence": 1244
+      },
+      {
+       "size": "5XL",
+       "surchargePence": 1519
+      }
+     ],
+     "locations": [
+      {
+       "location": "Front",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Back",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Front + Back",
+       "surchargePence": 754,
+       "default": false
+      }
+     ]
+    },
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 4232
+      },
+      {
+       "qty": 2,
+       "pence": 3659
+      },
+      {
+       "qty": 5,
+       "pence": 3316
+      },
+      {
+       "qty": 10,
+       "pence": 3201
+      },
+      {
+       "qty": 25,
+       "pence": 3133
+      },
+      {
+       "qty": 50,
+       "pence": 3110
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 260
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 500
+      }
+     ],
+     "locations": [
+      {
+       "location": "Large Chest",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Central Chest",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "G18000",
+   "name": "Heavy Blend sweatshirt (Gildan 18000)",
+   "fit": "Unisex",
+   "active": true,
+   "colours": [
+    "White",
+    "Sport Grey",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "print": {
+     "supplierMethod": "DTG",
+     "baseLocation": "front",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 2886
+      },
+      {
+       "qty": 2,
+       "pence": 2644
+      },
+      {
+       "qty": 5,
+       "pence": 2499
+      },
+      {
+       "qty": 10,
+       "pence": 2450
+      },
+      {
+       "qty": 25,
+       "pence": 2421
+      },
+      {
+       "qty": 50,
+       "pence": 2412
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 260
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 500
+      },
+      {
+       "size": "4XL",
+       "surchargePence": 1188
+      },
+      {
+       "size": "5XL",
+       "surchargePence": 1464
+      }
+     ],
+     "locations": [
+      {
+       "location": "Front",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Back",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Front + Back",
+       "surchargePence": 754,
+       "default": false
+      }
+     ]
+    },
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 4101
+      },
+      {
+       "qty": 2,
+       "pence": 3543
+      },
+      {
+       "qty": 5,
+       "pence": 3209
+      },
+      {
+       "qty": 10,
+       "pence": 3097
+      },
+      {
+       "qty": 25,
+       "pence": 3031
+      },
+      {
+       "qty": 50,
+       "pence": 3008
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 260
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 500
+      }
+     ],
+     "locations": [
+      {
+       "location": "Large Chest",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Central Chest",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "G5000",
+   "name": "Heavy Cotton T-shirt (Gildan 5000)",
+   "fit": "Unisex",
+   "active": true,
+   "colours": [
+    "White",
+    "Sports Gray",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "print": {
+     "supplierMethod": "DTG",
+     "baseLocation": "front",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 1628
+      },
+      {
+       "qty": 2,
+       "pence": 1444
+      },
+      {
+       "qty": 5,
+       "pence": 1334
+      },
+      {
+       "qty": 10,
+       "pence": 1297
+      },
+      {
+       "qty": 25,
+       "pence": 1275
+      },
+      {
+       "qty": 50,
+       "pence": 1267
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 260
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 504
+      },
+      {
+       "size": "4XL",
+       "surchargePence": 1376
+      },
+      {
+       "size": "5XL",
+       "surchargePence": 1712
+      }
+     ],
+     "locations": [
+      {
+       "location": "Front",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Back",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Front + Back",
+       "surchargePence": 703,
+       "default": false
+      }
+     ]
+    },
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 2870
+      },
+      {
+       "qty": 2,
+       "pence": 2371
+      },
+      {
+       "qty": 5,
+       "pence": 2071
+      },
+      {
+       "qty": 10,
+       "pence": 1971
+      },
+      {
+       "qty": 25,
+       "pence": 1912
+      },
+      {
+       "qty": 50,
+       "pence": 1892
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 245
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 489
+      }
+     ],
+     "locations": [
+      {
+       "location": "Large Chest",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Central Chest",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS11346",
+   "name": "Men's Polo Shirt fitted cut (SOL'S Perfect Men 11346)",
+   "fit": "Men",
+   "active": true,
+   "colours": [
+    "White",
+    "Pure Gray",
+    "Royal Blue",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 3150
+      },
+      {
+       "qty": 2,
+       "pence": 2635
+      },
+      {
+       "qty": 5,
+       "pence": 2325
+      },
+      {
+       "qty": 10,
+       "pence": 2222
+      },
+      {
+       "qty": 25,
+       "pence": 2160
+      },
+      {
+       "qty": 50,
+       "pence": 2140
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 252
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 486
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Large Back",
+       "surchargePence": 0,
+       "default": false
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS11347",
+   "name": "Perfect Women polo (SOL’S 11347)",
+   "fit": "Women",
+   "active": true,
+   "colours": [
+    "White",
+    "French Navy",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 3150
+      },
+      {
+       "qty": 2,
+       "pence": 2635
+      },
+      {
+       "qty": 5,
+       "pence": 2325
+      },
+      {
+       "qty": 10,
+       "pence": 2222
+      },
+      {
+       "qty": 25,
+       "pence": 2160
+      },
+      {
+       "qty": 50,
+       "pence": 2140
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Large Back",
+       "surchargePence": 0,
+       "default": false
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS03566",
+   "name": "Planet organic polo (SOL’S 03566)",
+   "fit": "Men",
+   "active": true,
+   "colours": [
+    "White",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 3445
+      },
+      {
+       "qty": 2,
+       "pence": 2930
+      },
+      {
+       "qty": 5,
+       "pence": 2620
+      },
+      {
+       "qty": 10,
+       "pence": 2517
+      },
+      {
+       "qty": 25,
+       "pence": 2455
+      },
+      {
+       "qty": 50,
+       "pence": 2435
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 252
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 486
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Large Back",
+       "surchargePence": 0,
+       "default": false
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS11362",
+   "name": "Spring II piqué polo (SOL’S 11362)",
+   "fit": "Men",
+   "active": true,
+   "colours": [
+    "White",
+    "Grey Melange",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "print": {
+     "supplierMethod": "DTF",
+     "baseLocation": "front",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 2536
+      },
+      {
+       "qty": 2,
+       "pence": 2336
+      },
+      {
+       "qty": 5,
+       "pence": 2216
+      },
+      {
+       "qty": 10,
+       "pence": 2176
+      },
+      {
+       "qty": 25,
+       "pence": 2152
+      },
+      {
+       "qty": 50,
+       "pence": 2144
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 611
+      },
+      {
+       "size": "4XL",
+       "surchargePence": 917
+      },
+      {
+       "size": "5XL",
+       "surchargePence": 1223
+      }
+     ],
+     "locations": [
+      {
+       "location": "Front",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Back",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Front + Back",
+       "surchargePence": 712,
+       "default": false
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "G2000",
+   "name": "Ultra Cotton T-shirt (Gildan 2000)",
+   "fit": "Unisex",
+   "active": true,
+   "colours": [
+    "White",
+    "Sports Gray",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "print": {
+     "supplierMethod": "DTG",
+     "baseLocation": "front",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 2122
+      },
+      {
+       "qty": 2,
+       "pence": 1955
+      },
+      {
+       "qty": 5,
+       "pence": 1856
+      },
+      {
+       "qty": 10,
+       "pence": 1822
+      },
+      {
+       "qty": 25,
+       "pence": 1802
+      },
+      {
+       "qty": 50,
+       "pence": 1796
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 300
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 576
+      },
+      {
+       "size": "4XL",
+       "surchargePence": 851
+      },
+      {
+       "size": "5XL",
+       "surchargePence": 1127
+      }
+     ],
+     "locations": [
+      {
+       "location": "Front",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Back",
+       "surchargePence": 0,
+       "default": false
+      },
+      {
+       "location": "Front + Back",
+       "surchargePence": 770,
+       "default": false
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS03823",
+   "name": "Factor Men microfleece (SOL’S 03823)",
+   "fit": "Men",
+   "active": false,
+   "colours": [
+    "Charcoal Grey",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 7860
+      },
+      {
+       "qty": 2,
+       "pence": 7270
+      },
+      {
+       "qty": 5,
+       "pence": 6917
+      },
+      {
+       "qty": 10,
+       "pence": 6799
+      },
+      {
+       "qty": 25,
+       "pence": 6728
+      },
+      {
+       "qty": 50,
+       "pence": 6704
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 254
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 486
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS03824",
+   "name": "Factor Women microfleece (SOL’S 03824)",
+   "fit": "Women",
+   "active": false,
+   "colours": [
+    "Rope",
+    "Charcoal Grey",
+    "Navy",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 7860
+      },
+      {
+       "qty": 2,
+       "pence": 7270
+      },
+      {
+       "qty": 5,
+       "pence": 6917
+      },
+      {
+       "qty": 10,
+       "pence": 6799
+      },
+      {
+       "qty": 25,
+       "pence": 6728
+      },
+      {
+       "qty": 50,
+       "pence": 6704
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 254
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS03827",
+   "name": "Falcon Men softshell jacket (SOL’S 03827)",
+   "fit": "Men",
+   "active": false,
+   "colours": [
+    "Charcoal Grey",
+    "Abyss Blue",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 7860
+      },
+      {
+       "qty": 2,
+       "pence": 7270
+      },
+      {
+       "qty": 5,
+       "pence": 6917
+      },
+      {
+       "qty": 10,
+       "pence": 6799
+      },
+      {
+       "qty": 25,
+       "pence": 6728
+      },
+      {
+       "qty": 50,
+       "pence": 6704
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 254
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 486
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "code": "SOLS03825",
+   "name": "Falcon Men softshell vest (SOL’S 03825)",
+   "fit": "Men",
+   "active": false,
+   "colours": [
+    "Charcoal Grey",
+    "Abyss Blue",
+    "Black"
+   ],
+   "methods": {
+    "embroidery": {
+     "supplierMethod": "Embroidery",
+     "baseLocation": "left chest",
+     "tiers": [
+      {
+       "qty": 1,
+       "pence": 7218
+      },
+      {
+       "qty": 2,
+       "pence": 6628
+      },
+      {
+       "qty": 5,
+       "pence": 6274
+      },
+      {
+       "qty": 10,
+       "pence": 6157
+      },
+      {
+       "qty": 25,
+       "pence": 6086
+      },
+      {
+       "qty": 50,
+       "pence": 6062
+      }
+     ],
+     "sizes": [
+      {
+       "size": "S",
+       "surchargePence": 0
+      },
+      {
+       "size": "M",
+       "surchargePence": 0
+      },
+      {
+       "size": "L",
+       "surchargePence": 0
+      },
+      {
+       "size": "XL",
+       "surchargePence": 0
+      },
+      {
+       "size": "2XL",
+       "surchargePence": 252
+      },
+      {
+       "size": "3XL",
+       "surchargePence": 486
+      }
+     ],
+     "locations": [
+      {
+       "location": "Left Chest",
+       "surchargePence": 0,
+       "default": true
+      },
+      {
+       "location": "Large Back",
+       "surchargePence": 0,
+       "default": false
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

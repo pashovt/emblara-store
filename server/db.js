@@ -161,6 +161,24 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
       });
       return r.rows[0].ok === true;
     },
+    async businessProfile() {
+      return (await app((c) => c.query('select * from invoicing.business_profile where id = 1'))).rows[0] ?? null;
+    },
+    async saveBusinessProfile(profile) {
+      return (await app((c) => c.query('select * from invoicing.save_business_profile($1::jsonb)', [JSON.stringify(profile)]))).rows[0] ?? null;
+    },
+    async catalogueItems() {
+      return (await app((c) => c.query(`select i.*, l.product_id,
+        coalesce((select sum(oi.quantity)::int from emblara.order_items oi join emblara.orders o on o.id=oi.order_id where oi.product_id=l.product_id and o.payment_status='paid' and o.created_at >= date_trunc('month', now() at time zone 'Europe/London') at time zone 'Europe/London'), 0) as ordered_this_month,
+        coalesce((select jsonb_agg(jsonb_build_object('method', p.method, 'qty_from', p.qty_from, 'unit_price_pence', p.unit_price_pence) order by p.method, p.qty_from) from invoicing.catalogue_prices p where p.item_id=i.id), '[]'::jsonb) as price_tiers
+        from invoicing.catalogue_items i left join invoicing.catalogue_product_links l on l.catalogue_item_id=i.id order by i.sort_order, i.name`))).rows;
+    },
+    async linkCatalogueProduct(productId, itemId) {
+      await app((c) => c.query('select invoicing.link_store_product($1, $2)', [productId, itemId]));
+    },
+    async recordStockMovement({ itemId, type, quantity, note, requestId }) {
+      return (await app((c) => c.query('select * from invoicing.record_stock_movement($1, $2::invoicing.stock_movement_type, $3, $4, $5)', [itemId, type, quantity, note, requestId]))).rows[0] ?? null;
+    },
 
     async storeImage(buf, name, contentType) {
       const key = `products/${name}`;
@@ -265,6 +283,11 @@ function local() {
     async staffActive() {
       return false;
     },
+    async businessProfile() { throw new HttpError(503, 'The back office needs the database.'); },
+    async saveBusinessProfile() { throw new HttpError(503, 'The back office needs the database.'); },
+    async catalogueItems() { throw new HttpError(503, 'The back office needs the database.'); },
+    async linkCatalogueProduct() { throw new HttpError(503, 'The back office needs the database.'); },
+    async recordStockMovement() { throw new HttpError(503, 'The back office needs the database.'); },
     async storeImage(buf, name) {
       await mkdir(path.join(dir, 'uploads'), { recursive: true });
       await writeFile(path.join(dir, 'uploads', name), buf);

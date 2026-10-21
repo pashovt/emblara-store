@@ -36,6 +36,35 @@ const invalid = (fn) => {
 };
 
 export const listProducts = async () => ({ products: await db().listProducts() });
+export const getBusinessProfile = async () => ({ profile: await db().businessProfile() });
+export const listCatalogue = async () => ({ items: await db().catalogueItems() });
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PROFILE_TEXT = new Set(['trading_name', 'legal_name', 'address_line1', 'address_line2', 'city', 'postcode', 'country', 'company_number', 'email', 'phone', 'bank_account_name', 'bank_sort_code', 'bank_account_number', 'default_delivery_estimate', 'default_artwork_note', 'default_returns_note']);
+const cleanProfile = (input) => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new HttpError(422, 'Enter the business profile details.');
+  const out = {};
+  for (const key of PROFILE_TEXT) if (key in input) out[key] = typeof input[key] === 'string' ? input[key].trim() : '';
+  for (const key of ['default_payment_terms_days', 'default_deposit_percent']) {
+    if (!(key in input) || input[key] === '') continue;
+    const number = Number(input[key]);
+    if (!Number.isFinite(number)) throw new HttpError(422, 'Enter valid quotation defaults.');
+    out[key] = number;
+  }
+  if (!out.trading_name || !out.email) throw new HttpError(422, 'Trading name and email are required.');
+  return out;
+};
+export const saveBusinessProfile = async (profile) => ({ profile: await db().saveBusinessProfile(cleanProfile(profile)) });
+export async function linkCatalogueProduct(input) {
+  if (!UUID.test(String(input?.product_id)) || !UUID.test(String(input?.catalogue_item_id))) throw new HttpError(422, 'Choose a store product and catalogue item.');
+  await db().linkCatalogueProduct(input.product_id, input.catalogue_item_id);
+  return { ok: true };
+}
+export async function recordStockMovement(input) {
+  const quantity = Number(input?.quantity);
+  const note = typeof input?.note === 'string' ? input.note.trim() : '';
+  if (!UUID.test(String(input?.item_id)) || !UUID.test(String(input?.request_id)) || !['IN', 'OUT'].includes(input?.type) || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000 || note.length > 500 || (input.type === 'OUT' && !note)) throw new HttpError(422, 'Enter a valid stock movement. Stock going out needs a note.');
+  return { movement: await db().recordStockMovement({ itemId: input.item_id, type: input.type, quantity, note, requestId: input.request_id }) };
+}
 
 export async function saveProduct(input, id) {
   const row = invalid(() => parseProductInput(input, db().imagePrefixes()));

@@ -5,6 +5,8 @@ import { gbp } from '../lib/utils.js';
 import { api, useLoad } from '../admin/api.js';
 import Navigation from '../admin/Navigation.jsx';
 import ComingSoon from '../admin/ComingSoon.jsx';
+import Catalogue from '../admin/Catalogue.jsx';
+import Settings from '../admin/Settings.jsx';
 
 // Store Dashboard. Everything the merchant does to products and orders goes
 // through /api/admin/*, which re-checks the signed session cookie on every call.
@@ -43,7 +45,9 @@ export default function Admin({ route }) {
       <div className="adm__body">
         {section === 'orders' && (route.sub ? <OrderDetail id={route.sub} /> : <Orders />)}
         {section === 'products' && (route.sub ? <ProductForm id={route.sub} /> : <Products />)}
-        {['sales', 'support', 'catalogue', 'settings'].includes(section) && <ComingSoon section={section[0].toUpperCase() + section.slice(1)} />}
+        {section === 'catalogue' && <Catalogue />}
+        {section === 'settings' && <Settings />}
+        {['sales', 'support'].includes(section) && <ComingSoon section={section[0].toUpperCase() + section.slice(1)} />}
       </div>
     </div>
   );
