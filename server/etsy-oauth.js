@@ -7,6 +7,10 @@ import { db } from './db.js';
 import { HttpError, origin, redirect, send } from './http.js';
 
 const COOKIE = 'emblara_etsy_oauth';
+// The cookie is issued from /api/admin/... and consumed at /api/etsy/... .
+// Cookie paths must match the issuing response URL, so /api is the narrowest
+// valid shared scope for the short-lived OAuth hand-off.
+const COOKIE_PATH = '/api';
 const TTL = 10 * 60;
 const SCOPES = ['shops_r', 'listings_r', 'listings_w'];
 const b64 = (v) => Buffer.from(v).toString('base64url');
@@ -43,7 +47,7 @@ function decode(value, secret) {
   }
 }
 
-const clear = (secure) => `${COOKIE}=; Path=/api/etsy/oauth; HttpOnly; SameSite=Lax; Max-Age=0${secure ? '; Secure' : ''}`;
+const clear = (secure) => `${COOKIE}=; Path=${COOKIE_PATH}; HttpOnly; SameSite=Lax; Max-Age=0${secure ? '; Secure' : ''}`;
 const encrypt = (value, key) => {
   const iv = randomBytes(12); const cipher = createCipheriv('aes-256-gcm', key, iv);
   const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
@@ -59,7 +63,7 @@ export function start(req, res, secure) {
   const challenge = createHash('sha256').update(verifier).digest('base64url');
   const callback = `${origin(req, cfg)}/api/etsy/oauth/callback`;
   const params = new URLSearchParams({ response_type: 'code', client_id: cfg.etsy.keystring, redirect_uri: callback, scope: SCOPES.join(' '), state, code_challenge: challenge, code_challenge_method: 'S256' });
-  return redirect(res, `https://www.etsy.com/oauth/connect?${params}`, { 'Set-Cookie': `${COOKIE}=${cookieValue}; Path=/api/etsy/oauth; HttpOnly; SameSite=Lax; Max-Age=${TTL}${secure ? '; Secure' : ''}` });
+  return redirect(res, `https://www.etsy.com/oauth/connect?${params}`, { 'Set-Cookie': `${COOKIE}=${cookieValue}; Path=${COOKIE_PATH}; HttpOnly; SameSite=Lax; Max-Age=${TTL}${secure ? '; Secure' : ''}` });
 }
 
 export async function callback(req, res, url, secure) {
