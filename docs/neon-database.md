@@ -87,7 +87,8 @@ Local: all in `.env.local`, written by `neon link`, `neon deploy` and `npm run d
 |---|---|---|
 | `EMBLARA_APP_DATABASE_URL` | store server (role `emblara_app`, pooled) | `db:migrate --set-passwords` |
 | `EMBLARA_PUBLIC_DATABASE_URL` | catalogue reads (role `emblara_public`, pooled) | `db:migrate --set-passwords` |
-| `EMBLARA_PORTAL_DATABASE_URL` | future customer-link routes (role `emblara_portal`, pooled) | `db:migrate --set-passwords` |
+| `EMBLARA_PORTAL_DATABASE_URL` | quote-request and customer-link routes (role `emblara_portal`, pooled) | `db:migrate --set-passwords` |
+| `LINK_ENCRYPTION_KEY` | 32 random bytes, base64 encoded; encrypts staff-copyable quote links | you |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION` | photo uploads and URLs | `neon deploy` / `neon env pull` |
 | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` | admin scripts only (owner) | `neon link` |
 | `ADMIN_SESSION_SECRET` | dashboard session cookie | you |

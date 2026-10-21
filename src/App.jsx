@@ -8,6 +8,8 @@ import Checkout from './pages/Checkout.jsx';
 import OrderSuccess from './pages/OrderSuccess.jsx';
 import Admin from './pages/Admin.jsx';
 import Privacy from './pages/Privacy.jsx';
+import RequestQuote from './pages/RequestQuote.jsx';
+import Quote from './pages/Quote.jsx';
 import ConsentBanner from './components/ConsentBanner.jsx';
 import { pageview, useConsent } from './lib/analytics.js';
 import { scrollToId, scrollToY, useRoute, useSmoothScroll } from './lib/utils.js';
@@ -18,6 +20,8 @@ const titles = {
   checkout: 'Checkout — EMBLARA',
   'order-success': 'Order confirmed — EMBLARA',
   privacy: 'Privacy & cookies — EMBLARA',
+  request: 'Request a quote — EMBLARA',
+  q: 'Quotation — EMBLARA',
   admin: 'Store Dashboard — EMBLARA',
 };
 
@@ -60,6 +64,8 @@ export default function App() {
   else if (route.page === 'checkout') page = <Checkout />;
   else if (route.page === 'order-success') page = <OrderSuccess />;
   else if (route.page === 'privacy') page = <Privacy />;
+  else if (route.page === 'request') page = <RequestQuote />;
+  else if (route.page === 'q') page = <Quote token={route.param ?? ''} />;
   else page = <Home />;
 
   return (

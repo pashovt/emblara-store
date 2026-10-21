@@ -179,6 +179,13 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
     async recordStockMovement({ itemId, type, quantity, note, requestId }) {
       return (await app((c) => c.query('select * from invoicing.record_stock_movement($1, $2::invoicing.stock_movement_type, $3, $4, $5)', [itemId, type, quantity, note, requestId]))).rows[0] ?? null;
     },
+    async salesRequests() { return (await app((c) => c.query('select id, reference, status, contact_name, organisation, email, quantity_total, quantity_unsure, needed_by, created_at from quoting.quote_requests order by created_at desc'))).rows; },
+    async salesInvoices() { return (await app((c) => c.query("select i.id,i.number,i.status,i.total_pence,i.due_date,i.created_at,c.organisation_name from invoicing.invoices i join invoicing.clients c on c.id=i.client_id order by i.created_at desc"))).rows; },
+    async salesClients() { return (await app((c) => c.query('select id, organisation_name, contact_name, email, archived, created_at from invoicing.clients order by organisation_name'))).rows; },
+    async createSalesClient(input) { return (await app((c) => c.query('select invoicing.create_client($1::jsonb) as id', [JSON.stringify(input)]))).rows[0].id; },
+    async createQuote(requestId) { return (await app((c) => c.query('select quoting.create_quote($1) as id', [requestId]))).rows[0].id; },
+    async addQuoteLine(quoteId, line) { await app((c) => c.query('select quoting.add_quote_line($1,$2,$3,$4)', [quoteId, line.description, line.quantity, line.unit_price_pence])); },
+    async issueQuote(quoteId, token, ciphertext) { return (await app((c) => c.query('select * from quoting.issue_quote($1,$2,$3)', [quoteId, token, ciphertext]))).rows[0]; },
 
     async storeImage(buf, name, contentType) {
       const key = `products/${name}`;
@@ -288,6 +295,13 @@ function local() {
     async catalogueItems() { throw new HttpError(503, 'The back office needs the database.'); },
     async linkCatalogueProduct() { throw new HttpError(503, 'The back office needs the database.'); },
     async recordStockMovement() { throw new HttpError(503, 'The back office needs the database.'); },
+    async salesRequests() { throw new HttpError(503, 'The back office needs the database.'); },
+    async salesInvoices() { throw new HttpError(503, 'The back office needs the database.'); },
+    async salesClients() { throw new HttpError(503, 'The back office needs the database.'); },
+    async createSalesClient() { throw new HttpError(503, 'The back office needs the database.'); },
+    async createQuote() { throw new HttpError(503, 'The back office needs the database.'); },
+    async addQuoteLine() { throw new HttpError(503, 'The back office needs the database.'); },
+    async issueQuote() { throw new HttpError(503, 'The back office needs the database.'); },
     async storeImage(buf, name) {
       await mkdir(path.join(dir, 'uploads'), { recursive: true });
       await writeFile(path.join(dir, 'uploads', name), buf);

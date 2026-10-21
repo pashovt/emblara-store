@@ -1,0 +1,21 @@
+import { useState } from 'react';
+import { api, useLoad } from './api.js';
+import { gbp } from '../lib/utils.js';
+
+export default function Sales() {
+  const [state, reload] = useLoad('sales');
+  const [tab, setTab] = useState('requests');
+  const [draftQuote, setDraftQuote] = useState(null); const [message, setMessage] = useState('');
+  const startQuote = async (requestId) => { try { const result = await api('sales/quotes', { method: 'POST', body: { request_id: requestId } }); setDraftQuote(result.id); setMessage('Quotation draft created. Add at least one line before issuing it.'); reload(); } catch (error) { setMessage(error.message); } };
+  if (state.error) return <p className="adm__error">{state.error}</p>;
+  if (state.loading) return <p className="adm__muted">Loading sales…</p>;
+  const rows = state.data?.[tab] ?? [];
+  return <section><h1 className="adm__h1">Sales</h1><div className="adm__tabs" role="tablist">{[['requests', 'Requests'], ['invoices', 'Invoices'], ['clients', 'Clients']].map(([id, label]) => <button key={id} type="button" aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>{message && <p className="adm__ok">{message}</p>}{!rows.length ? <p className="adm__muted">No {tab} yet.</p> : <div className="adm__scroll"><table className="adm__table adm__table--cards"><tbody>{tab === 'requests' && rows.map((row) => <tr key={row.id}><td><strong>{row.reference}</strong><small>{row.organisation} · {row.contact_name}</small></td><td>{row.quantity_unsure ? 'Quantity to confirm' : `${row.quantity_total} garments`}</td><td><span className="adm__badge">{row.status}</span></td><td>{row.status !== 'accepted' && <button type="button" className="pill" onClick={() => startQuote(row.id)}>Create quotation</button>}</td></tr>)}{tab === 'invoices' && rows.map((row) => <tr key={row.id}><td><strong>{row.number}</strong><small>{row.organisation_name}</small></td><td>{gbp(row.total_pence / 100)}</td><td><span className="adm__badge">{row.status}</span></td></tr>)}{tab === 'clients' && rows.map((row) => <tr key={row.id}><td><strong>{row.organisation_name}</strong><small>{row.contact_name || row.email}</small></td><td>{row.email}</td><td>{row.archived ? 'Archived' : 'Active'}</td></tr>)}</tbody></table></div>}{draftQuote && <QuoteComposer quoteId={draftQuote} />}</section>;
+}
+
+function QuoteComposer({ quoteId }) {
+  const [line, setLine] = useState({ description: '', quantity: 1, unit_price_pence: '' }); const [busy, setBusy] = useState(false); const [link, setLink] = useState(''); const [error, setError] = useState(''); const [saved, setSaved] = useState('');
+  const add = async (event) => { event.preventDefault(); setBusy(true); setError(''); try { await api(`sales/quotes/lines?id=${encodeURIComponent(quoteId)}`, { method: 'POST', body: { ...line, quantity: Number(line.quantity), unit_price_pence: Number(line.unit_price_pence) } }); setLine({ description: '', quantity: 1, unit_price_pence: '' }); setSaved('Quotation line saved.'); } catch (issue) { setError(issue.message); } finally { setBusy(false); } };
+  const issue = async () => { setBusy(true); setError(''); try { const result = await api(`sales/quotes/issue?id=${encodeURIComponent(quoteId)}`, { method: 'POST', body: {} }); setLink(result.link); } catch (issue) { setError(issue.message); } finally { setBusy(false); } };
+  return <div className="adm__card"><h2>Quotation draft</h2>{link ? <><p>Email is not set up. Copy this private link:</p><input readOnly value={link} onFocus={(event) => event.target.select()} /></> : <><form className="adm__form" onSubmit={add}><label>Description<input required value={line.description} onChange={(event) => setLine({ ...line, description: event.target.value })} /></label><label>Quantity<input required type="number" min="1" value={line.quantity} onChange={(event) => setLine({ ...line, quantity: event.target.value })} /></label><label>Unit price (pence)<input required type="number" min="0" value={line.unit_price_pence} onChange={(event) => setLine({ ...line, unit_price_pence: event.target.value })} /></label><button className="pill" disabled={busy}>Add line</button></form>{saved && <p className="adm__ok">{saved}</p>}<button type="button" className="pill pill--copper" disabled={busy} onClick={issue}>Issue quotation</button></>}{error && <p className="adm__error">{error}</p>}</div>;
+}

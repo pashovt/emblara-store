@@ -16,6 +16,10 @@ The monthly order figure is a warning only. It counts paid website order line qu
 
 Stock is optional per catalogue item. When tracked, staff can only adjust it through the append-only IN/OUT ledger; an OUT movement requires a note and cannot make stock negative. The business profile and quotation defaults are also written through database functions, not direct table updates.
 
+## Phase 3: sales and quotation requests
+
+The public quote request page is `#/request`. A request is stored only through the restricted portal role; the role has no direct table privileges. Staff can see requests, invoices and clients in Sales. Private quotation links use `#/q/<token>` and send the token in an HTTP header, not a URL query string. These routes are noindex and their API responses set `Referrer-Policy: no-referrer`.
+
 ## What is not built yet
 
 No customer portal route, sales record, support ticket, artwork file or production order exists yet.

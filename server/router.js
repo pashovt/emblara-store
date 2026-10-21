@@ -7,6 +7,8 @@ import { HttpError, clientIp, origin, readBody, readJson, sameOrigin, send } fro
 import { clearCookie, login, requireStaff, sessionCookie } from './auth.js';
 import { demoPay, demoSession, orderStatus, processWebhook, startCheckout } from './payments.js';
 import * as admin from './admin.js';
+import * as sales from './sales.js';
+import * as portal from './portal.js';
 import { withContext } from './context.js';
 
 // price_pence is the column name; the shop page reads it (services have a fixed price, garments are null).
@@ -46,6 +48,15 @@ export async function handle(req, res) {
       const out = await withContext({ flow: 'checkout' }, () => startCheckout(body, origin(req, cfg)));
       return send(res, 200, out);
     }
+    if (url.pathname.startsWith('/api/portal/')) {
+      const token = req.headers['x-token']?.toString() ?? '';
+      return await withContext({ flow: 'portal' }, async () => {
+        if (route === 'POST /portal/requests') return send(res, 201, { request: await portal.submitRequest(await readJson(req, 20_000)) }, { 'Referrer-Policy': 'no-referrer' });
+        if (route === 'POST /portal/quote') return send(res, 200, { quote: await portal.quote(token) }, { 'Referrer-Policy': 'no-referrer' });
+        if (route === 'POST /portal/quote/respond') return send(res, 200, { quote: await portal.respond(token, await readJson(req, 5_000)) }, { 'Referrer-Policy': 'no-referrer' });
+        throw new HttpError(404, 'Not found.');
+      });
+    }
     if (route === 'GET /order-status') return send(res, 200, await withContext({ flow: 'status' }, () => orderStatus(url.searchParams.get('session'))));
     if (req.method === 'GET' && url.pathname.startsWith('/api/uploads/') && !cfg.neon) {
       const { buf, type } = await admin.readUpload(url.pathname.slice('/api/uploads/'.length));
@@ -78,6 +89,11 @@ export async function handle(req, res) {
           case 'GET /admin/me': return send(res, 200, { email: staff.email });
           case 'GET /admin/products': return send(res, 200, await admin.listProducts());
           case 'GET /admin/catalogue': return send(res, 200, await admin.listCatalogue());
+          case 'GET /admin/sales': return send(res, 200, await sales.overview());
+          case 'POST /admin/sales/clients': return send(res, 201, await sales.createClient(await readJson(req, 10_000)));
+          case 'POST /admin/sales/quotes': return send(res, 201, await sales.createQuote((await readJson(req, 2_000)).request_id));
+          case 'POST /admin/sales/quotes/lines': return send(res, 200, await sales.addQuoteLine(id, await readJson(req, 5_000)));
+          case 'POST /admin/sales/quotes/issue': return send(res, 200, await sales.issueQuote(id, origin(req, cfg)));
           case 'POST /admin/catalogue/link': return send(res, 200, await admin.linkCatalogueProduct(await readJson(req, 5_000)));
           case 'POST /admin/catalogue/stock': return send(res, 200, await admin.recordStockMovement(await readJson(req, 5_000)));
           case 'GET /admin/settings': return send(res, 200, await admin.getBusinessProfile());

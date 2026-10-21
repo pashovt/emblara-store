@@ -7,6 +7,7 @@ import Navigation from '../admin/Navigation.jsx';
 import ComingSoon from '../admin/ComingSoon.jsx';
 import Catalogue from '../admin/Catalogue.jsx';
 import Settings from '../admin/Settings.jsx';
+import Sales from '../admin/Sales.jsx';
 
 // Store Dashboard. Everything the merchant does to products and orders goes
 // through /api/admin/*, which re-checks the signed session cookie on every call.
@@ -47,7 +48,8 @@ export default function Admin({ route }) {
         {section === 'products' && (route.sub ? <ProductForm id={route.sub} /> : <Products />)}
         {section === 'catalogue' && <Catalogue />}
         {section === 'settings' && <Settings />}
-        {['sales', 'support'].includes(section) && <ComingSoon section={section[0].toUpperCase() + section.slice(1)} />}
+        {section === 'sales' && <Sales />}
+        {section === 'support' && <ComingSoon section="Support" />}
       </div>
     </div>
   );
