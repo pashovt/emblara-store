@@ -93,6 +93,10 @@ export async function saveProduct(input, id) {
 }
 
 export async function listOrders(statusFilter) {
+  if (db().kind === 'postgres') {
+    const orders = await db().journeyOrders(statusFilter || null);
+    return { orders, counts: { paid: orders.filter((o) => o.stage === 'paid').length, processing: orders.filter((o) => o.stage === 'in_production').length } };
+  }
   const orders = await db().listOrders(FULFILMENT_OF[statusFilter] ? [FULFILMENT_OF[statusFilter]] : undefined);
   const list = orders.map(forList).sort(byAttention);
   return { orders: list, counts: { paid: list.filter((o) => o.status === 'paid').length, processing: list.filter((o) => o.status === 'processing').length } };
@@ -100,22 +104,24 @@ export async function listOrders(statusFilter) {
 
 export async function getOrder(id) {
   const order = await db().getOrder({ id });
-  if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
+  if (!order || (db().kind !== 'postgres' && !isVisible(order))) throw new HttpError(404, 'Order not found.');
   const items = await db().orderItems(order.id);
+  const artworks = await db().orderArtwork(order.id);
   return {
     order: {
-      id: order.id, number: order.number, status: withStatus(order).status,
+      id: order.id, number: order.number, status: order.stage ?? withStatus(order).status, source: order.source ?? 'website', stage: order.stage ?? withStatus(order).status, artwork_status: order.artwork_status ?? (order.artwork === 'attached' ? 'received' : 'not_received'), artwork_note: order.artwork_note ?? null,
       payment_status: order.payment_status, fulfillment_status: order.fulfillment_status,
       customer_name: order.customer_name, email: order.email, phone: order.phone, shipping: order.shipping,
       notes: order.notes, artwork: order.artwork, amount_total_pence: order.amount_total_pence, currency: order.currency,
       paid_at: order.paid_at, created_at: order.created_at, fulfilment_method: FULFILMENT_METHOD, payment_reference: order.stripe_payment_intent,
     },
-    items: items.map((i) => ({ id: i.id, product_name: i.product_name, options: i.options, quantity: i.quantity, unit_amount_pence: i.unit_amount_pence, line_amount_pence: i.line_amount_pence })),
+    items: items.map((i) => ({ id: i.id, product_name: i.product_name, options: i.options, quantity: i.quantity, unit_amount_pence: i.unit_amount_pence, line_amount_pence: i.line_amount_pence })), artworks,
   };
 }
 
 // Paid -> Processing -> Fulfilled, one step at a time, never backwards.
 export async function advanceOrder(id, to) {
+  if (db().kind === 'postgres') return { order: await db().advanceJourneyOrder(id, to) };
   const order = await db().getOrder({ id });
   if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
   const from = withStatus(order).status;
@@ -124,6 +130,10 @@ export async function advanceOrder(id, to) {
   const updated = await db().patchOrder(id, { fulfillment_status: to }, { payment_status: 'paid', fulfillment_status: order.fulfillment_status });
   if (!updated) throw new HttpError(409, 'The order changed. Reload and try again.');
   return { order: forList(updated) };
+}
+export async function setArtworkStatus(id, input) {
+  if (!UUID.test(String(id)) || !['not_received', 'received', 'approved', 'needs_changes'].includes(input?.status) || (input.status === 'needs_changes' && !String(input.note ?? '').trim())) throw new HttpError(422, 'Choose a valid artwork status and add a note when changes are needed.');
+  return { order: await db().setArtworkStatus(id, input.status, String(input.note ?? '').trim() || null) };
 }
 
 // Images: PNG, JPEG or WebP only, identified by content (not by the claimed type).

@@ -25,6 +25,7 @@ const hexLum = (hex) => {
 
 export function LogoProvider({ children }) {
   const [state, setState] = useState(load);
+  const [originalFile, setOriginalFile] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [saved, setSaved] = useState(true);
 
@@ -42,6 +43,7 @@ export function LogoProvider({ children }) {
 
   const setFromFile = useCallback(async (file) => {
     const custom = await cleanLogo(file);
+    setOriginalFile(file);
     commit({ mode: 'custom', custom });
     return custom;
   }, [commit]);
@@ -50,7 +52,7 @@ export function LogoProvider({ children }) {
     (mode) => commit({ ...state, mode: mode === 'custom' && state.custom ? 'custom' : 'emblara' }),
     [commit, state],
   );
-  const remove = useCallback(() => commit({ mode: 'emblara', custom: null }), [commit]);
+  const remove = useCallback(() => { setOriginalFile(null); commit({ mode: 'emblara', custom: null }); }, [commit]);
 
   // How to draw the logo on a garment of a given colour.
   const artFor = useCallback(
@@ -67,8 +69,8 @@ export function LogoProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ ...state, saved, setFromFile, choose, remove, artFor, panelOpen, setPanelOpen }),
-    [state, saved, setFromFile, choose, remove, artFor, panelOpen],
+    () => ({ ...state, originalFile, saved, setFromFile, choose, remove, artFor, panelOpen, setPanelOpen }),
+    [state, originalFile, saved, setFromFile, choose, remove, artFor, panelOpen],
   );
   return <LogoContext.Provider value={value}>{children}</LogoContext.Provider>;
 }

@@ -8,13 +8,14 @@
 // Public catalogue reads use a SEPARATE read-only role, so a visitor's request can never
 // reach orders or unpublished products, whatever the application code does.
 
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { toRow } from '../src/lib/catalogue.js';
 import { seedProducts } from '../src/data/catalogue-seed.js';
 import pg from 'pg';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { config } from './config.js';
 import { context } from './context.js';
 import { strictSsl } from './pg-url.js';
@@ -40,7 +41,7 @@ const JSONB = new Set(['config', 'images']);
 const ORDER_SET = new Set(['payment_status', 'fulfillment_status', 'paid_at', 'stripe_session_id', 'stripe_payment_intent', 'email', 'customer_name', 'phone', 'shipping']);
 const ORDER_WHEN = new Set(['payment_status', 'fulfillment_status']);
 
-function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
+function postgres({ appUrl, publicUrl, portalUrl, bucket, artworkBucket, endpoint, region }) {
   const base = `${endpoint}/${bucket}/`;
   const toUrl = (key) => (key.startsWith('http') ? key : `${base}${key}`);
   const toKey = (url) => (url.startsWith(base) ? url.slice(base.length) : url);
@@ -70,6 +71,15 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
   };
 
   const s3 = new S3Client({ region, endpoint, forcePathStyle: true }); // credentials: AWS_* env
+  const originalType = (bytes) => {
+    if (bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+    if (bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP') return 'image/webp';
+    if (bytes.subarray(0, 5).toString() === '%PDF-') return 'application/pdf';
+    const start = bytes.subarray(0, 4096).toString('utf8').replace(/^\uFEFF/, '');
+    if (/^\s*(?:<\?xml[^>]*>\s*)?<svg\b/i.test(start) && !/<script\b/i.test(start)) return 'image/svg+xml';
+    return null;
+  };
 
   return {
     kind: 'postgres',
@@ -109,7 +119,14 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
     },
 
     // The order and its lines are saved in ONE transaction: both or neither.
-    async createOrder(order, items) {
+    async createOrder(order, items, artworkId = null) {
+      if (artworkId) {
+        const record = (await app((c) => c.query('select * from emblara.get_pending_artwork($1)', [artworkId]))).rows[0];
+        if (!record) throw new HttpError(422, 'Upload the original artwork again.');
+        const object = await s3.send(new GetObjectCommand({ Bucket: artworkBucket, Key: record.storage_key }));
+        const bytes = Buffer.from(await object.Body.transformToByteArray());
+        if (bytes.length !== Number(record.size_bytes) || originalType(bytes) !== record.content_type || !timingSafeEqual(createHash('sha256').update(bytes).digest(), record.sha256)) throw new HttpError(422, 'The uploaded artwork could not be verified.');
+      }
       return app(async (c) => {
         const o = (
           await c.query(
@@ -123,6 +140,7 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
             [o.id, i.product_id, i.product_slug, i.product_name, JSON.stringify(i.options), i.quantity, i.unit_amount_pence, i.line_amount_pence],
           );
         }
+        if (artworkId) await c.query('select emblara.attach_artwork_to_order($1,$2)', [o.id, artworkId]);
         return o;
       });
     },
@@ -148,6 +166,10 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
         await app((c) => c.query("select * from emblara.orders where payment_status = 'paid' and fulfillment_status = any($1) order by paid_at desc nulls last limit 200", [fulfilments]))
       ).rows;
     },
+    async journeyOrders(stage = null) { return (await app((c) => c.query(`select id,number,source,stage,payment_status,fulfillment_status,artwork_status,customer_name,email,shipping,amount_total_pence,paid_at,created_at from emblara.orders ${stage ? 'where stage=$1' : ''} order by case stage when 'paid' then 0 when 'new' then 1 when 'awaiting_payment' then 2 when 'in_production' then 3 when 'shipped' then 4 else 5 end, created_at`, stage ? [stage] : []))).rows; },
+    async orderArtwork(orderId) { return (await app((c) => c.query('select id,file_name,kind,content_type,created_at,status_note from emblara.order_artwork where order_id=$1 order by created_at', [orderId]))).rows; },
+    async setArtworkStatus(orderId, status, note) { return (await app((c) => c.query('select * from emblara.set_artwork_status($1,$2,$3)', [orderId, status, note]))).rows[0]; },
+    async advanceJourneyOrder(orderId, stage, reason) { return (await app((c) => c.query('select * from emblara.advance_order($1,$2,$3)', [orderId, stage, reason]))).rows[0]; },
 
     // Staff. The password is checked inside Postgres; emblara.staff is unreadable to this role.
     async staffLogin(email, password) {
@@ -192,6 +214,17 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, endpoint, region }) {
     async invoicePdfData(invoiceId) { return (await app((c) => c.query("select i.*,c.organisation_name,c.contact_name,c.address_line1,c.address_line2,c.city,c.postcode,c.country from invoicing.invoices i join invoicing.clients c on c.id=i.client_id where i.id=$1", [invoiceId]))).rows[0] ?? null; },
     async invoiceLines(invoiceId) { return (await app((c) => c.query('select description,quantity,unit_price_pence,line_total_pence from invoicing.invoice_lines where invoice_id=$1 order by line_no', [invoiceId]))).rows; },
     async storeInvoicePdf(invoiceId, pdf) { return (await app((c) => c.query('select invoicing.store_invoice_pdf($1,$2::bytea) as id', [invoiceId, pdf]))).rows[0].id; },
+    async prepareArtworkUpload({ fileName, sizeBytes, contentType, sha256 }) {
+      const record = (await app((c) => c.query('select * from emblara.create_artwork_upload($1,$2,$3,$4)', [fileName, sizeBytes, contentType, sha256]))).rows[0];
+      const url = await getSignedUrl(s3, new PutObjectCommand({ Bucket: artworkBucket, Key: record.storage_key, ContentType: contentType }), { expiresIn: 300 });
+      return { id: record.id, url, headers: { 'content-type': contentType } };
+    },
+    async getArtwork(id) {
+      const record = (await app((c) => c.query('select id,storage_key,file_name,content_type from emblara.order_artwork where id=$1', [id]))).rows[0];
+      if (!record) return null;
+      const object = await s3.send(new GetObjectCommand({ Bucket: artworkBucket, Key: record.storage_key }));
+      return { ...record, bytes: Buffer.from(await object.Body.transformToByteArray()) };
+    },
 
     async storeImage(buf, name, contentType) {
       const key = `products/${name}`;
@@ -259,7 +292,8 @@ function local() {
       await load();
       return false;
     },
-    async createOrder(order, items) {
+    async createOrder(order, items, artworkId = null) {
+      if (artworkId) throw new HttpError(503, 'Artwork upload needs the database.');
       const db = await load();
       // Same defaults the Postgres table applies.
       const created = { id: randomUUID(), payment_status: 'pending', fulfillment_status: 'unfulfilled', ...order, created_at: now(), updated_at: now() };
@@ -290,6 +324,10 @@ function local() {
           .sort((a, b) => (b.paid_at ?? b.created_at).localeCompare(a.paid_at ?? a.created_at)),
       );
     },
+    async journeyOrders() { return this.listOrders(); },
+    async orderArtwork() { return []; },
+    async setArtworkStatus() { throw new HttpError(503, 'The back office needs the database.'); },
+    async advanceJourneyOrder() { throw new HttpError(503, 'The back office needs the database.'); },
     async staffLogin() {
       return null; // local mode signs in with DEMO_STAFF_* (see auth.js)
     },
@@ -314,6 +352,8 @@ function local() {
     async invoicePdfData() { throw new HttpError(503, 'The back office needs the database.'); },
     async invoiceLines() { throw new HttpError(503, 'The back office needs the database.'); },
     async storeInvoicePdf() { throw new HttpError(503, 'The back office needs the database.'); },
+    async prepareArtworkUpload() { throw new HttpError(503, 'Artwork upload needs the database.'); },
+    async getArtwork() { throw new HttpError(503, 'The back office needs the database.'); },
     async storeImage(buf, name) {
       await mkdir(path.join(dir, 'uploads'), { recursive: true });
       await writeFile(path.join(dir, 'uploads', name), buf);
@@ -329,7 +369,7 @@ let backend = null;
 let backendKey = '';
 export function db() {
   const cfg = config();
-  const key = cfg.neon ? `${cfg.neon.appUrl}|${cfg.neon.publicUrl}|${cfg.neon.portalUrl}|${cfg.neon.bucket}|${cfg.neon.endpoint}` : 'local';
+  const key = cfg.neon ? `${cfg.neon.appUrl}|${cfg.neon.publicUrl}|${cfg.neon.portalUrl}|${cfg.neon.bucket}|${cfg.neon.artworkBucket}|${cfg.neon.endpoint}` : 'local';
   if (!backend || backendKey !== key) {
     backend = cfg.neon ? postgres(cfg.neon) : local();
     backendKey = key;

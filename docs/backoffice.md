@@ -23,3 +23,9 @@ The public quote request page is `#/request`. A request is stored only through t
 ## What is not built yet
 
 The full customer account portal, sales records, support tickets, artwork files and production orders are not built yet. Quotation email delivery is added with the email workflow phase; until then staff can copy the private link.
+
+## Phase 4: orders and artwork
+
+### Upload spike
+
+Neon Object Storage has an S3-compatible presigned `PUT` flow. The server can create a short-lived, content-type-bound upload capability without exposing storage credentials, so customer originals can upload directly to the private `emblara-artwork` bucket. Vercel Functions have a 4.5 MB request-body limit, which rules out routing the allowed 25 MB originals through the application server. The browser upload needs the bucket to permit the store origin for `PUT`; that configuration is verified when the owner runs `neon deploy`.

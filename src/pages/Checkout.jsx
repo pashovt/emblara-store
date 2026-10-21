@@ -5,6 +5,7 @@ import { deliveryNote } from '../data/site.js';
 import { totalsFor, useCart } from '../store/cart.jsx';
 import { gbp } from '../lib/utils.js';
 import { ProductImage } from '../components/ui.jsx';
+import { useLogo } from '../store/logo.jsx';
 
 // Checkout. The bag is sent to /api/checkout as product ids, options and
 // quantities ONLY. The server prices it from the stored product data, saves a
@@ -14,6 +15,7 @@ import { ProductImage } from '../components/ui.jsx';
 
 export default function Checkout() {
   const { items, dropProducts, notice, dismissNotice } = useCart();
+  const { originalFile } = useLogo();
   const [artwork, setArtwork] = useState('later');
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
@@ -25,12 +27,25 @@ export default function Checkout() {
     setBusy(true);
     setError('');
     try {
+      let artworkId = null;
+      if (artwork === 'attached') {
+        if (!originalFile) throw new Error('Choose your logo again before checkout so we can upload the original file.');
+        const digest = await crypto.subtle.digest('SHA-256', await originalFile.arrayBuffer());
+        const sha256 = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+        const presign = await fetch('/api/artwork/presign', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ file_name: originalFile.name, size_bytes: originalFile.size, content_type: originalFile.type, sha256 }) });
+        const upload = await presign.json().catch(() => ({}));
+        if (!presign.ok) throw new Error(upload.error || 'Artwork upload is not available right now.');
+        const put = await fetch(upload.url, { method: 'PUT', headers: upload.headers, body: originalFile });
+        if (!put.ok) throw new Error('Artwork upload could not be completed. Please try again.');
+        artworkId = upload.id;
+      }
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: bySlug[i.slug].id, method: i.method, colour: i.colour, size: i.size, position: i.position, qty: i.qty, logoName: i.logoName })),
           artwork,
+          artwork_id: artworkId,
           notes,
         }),
       });

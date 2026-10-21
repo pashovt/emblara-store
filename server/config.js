@@ -21,7 +21,7 @@ export function config() {
     // (read-only, published AND available products). Product photos live in a public-read
     // Neon Object Storage bucket; AWS_* are the standard variables `neon env pull` writes.
     neon: appUrl && publicUrl
-      ? { appUrl, publicUrl, portalUrl: portalUrl || null, bucket: env('NEON_BUCKET') || 'emblara-products', endpoint: env('AWS_ENDPOINT_URL_S3').replace(/\/$/, ''), region: env('AWS_REGION') || 'eu-central-1' }
+      ? { appUrl, publicUrl, portalUrl: portalUrl || null, bucket: env('NEON_BUCKET') || 'emblara-products', artworkBucket: env('NEON_ARTWORK_BUCKET') || 'emblara-artwork', endpoint: env('AWS_ENDPOINT_URL_S3').replace(/\/$/, ''), region: env('AWS_REGION') || 'eu-central-1' }
       : null,
     stripeKey,
     // Real Stripe signing secret, or the demo secret used by the demo payment page.

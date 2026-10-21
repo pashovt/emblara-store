@@ -9,6 +9,7 @@ import { demoPay, demoSession, orderStatus, processWebhook, startCheckout } from
 import * as admin from './admin.js';
 import * as sales from './sales.js';
 import * as portal from './portal.js';
+import * as artwork from './artwork.js';
 import { withContext } from './context.js';
 
 // price_pence is the column name; the shop page reads it (services have a fixed price, garments are null).
@@ -48,6 +49,7 @@ export async function handle(req, res) {
       const out = await withContext({ flow: 'checkout' }, () => startCheckout(body, origin(req, cfg)));
       return send(res, 200, out);
     }
+    if (route === 'POST /artwork/presign') return send(res, 201, await withContext({ flow: 'checkout' }, async () => artwork.prepareUpload(await readJson(req, 2_000))));
     if (url.pathname.startsWith('/api/portal/')) {
       const token = req.headers['x-token']?.toString() ?? '';
       return await withContext({ flow: 'portal' }, async () => {
@@ -98,6 +100,7 @@ export async function handle(req, res) {
           case 'POST /admin/sales/quotes/lines': return send(res, 200, await sales.addQuoteLine(id, await readJson(req, 5_000)));
           case 'POST /admin/sales/quotes/issue': return send(res, 200, await sales.issueQuote(id, origin(req, cfg)));
           case 'GET /admin/sales/invoice-pdf': { const document = await sales.invoicePdf(id); return send(res, 200, document.pdf, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${document.filename}"` }); }
+          case 'GET /admin/artwork': { const file = await artwork.download(id); return send(res, 200, file.bytes, { 'Content-Type': file.content_type, 'Content-Disposition': `attachment; filename="${file.file_name.replaceAll('"', '')}"`, 'Content-Security-Policy': 'sandbox' }); }
           case 'POST /admin/catalogue/link': return send(res, 200, await admin.linkCatalogueProduct(await readJson(req, 5_000)));
           case 'POST /admin/catalogue/stock': return send(res, 200, await admin.recordStockMovement(await readJson(req, 5_000)));
           case 'GET /admin/settings': return send(res, 200, await admin.getBusinessProfile());
@@ -107,6 +110,7 @@ export async function handle(req, res) {
           case 'POST /admin/upload': return send(res, 201, await admin.uploadImage(await readBody(req, 4_000_000)));
           case 'GET /admin/orders': return send(res, 200, id ? await admin.getOrder(id) : await admin.listOrders(url.searchParams.get('status')));
           case 'POST /admin/orders/status': return send(res, 200, await admin.advanceOrder(id, (await readJson(req, 2_000)).status));
+          case 'POST /admin/orders/artwork-status': return send(res, 200, await admin.setArtworkStatus(id, await readJson(req, 2_000)));
           default: throw new HttpError(404, 'Not found.');
         }
       });
