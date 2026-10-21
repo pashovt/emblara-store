@@ -20,6 +20,15 @@ export function send(res, status, body, headers = {}) {
   return res.end(JSON.stringify(body));
 }
 
+export function redirect(res, location, headers = {}) {
+  res.statusCode = 302;
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Location', location);
+  for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);
+  return res.end();
+}
+
 // Raw body (the Stripe webhook is verified against the exact bytes).
 export async function readBody(req, limit = 1_000_000) {
   const chunks = [];

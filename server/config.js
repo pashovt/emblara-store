@@ -29,6 +29,11 @@ export function config() {
     demoPayments: !stripeKey,
     siteUrl: env('SITE_URL').replace(/\/$/, ''),
     sessionSecret: env('ADMIN_SESSION_SECRET'),
+    etsy: {
+      keystring: env('ETSY_KEYSTRING'),
+      sharedSecret: env('ETSY_SHARED_SECRET'),
+      tokenEncryptionKey: env('ETSY_TOKEN_ENCRYPTION_KEY'),
+    },
     demoStaff: { email: env('DEMO_STAFF_EMAIL').toLowerCase(), password: env('DEMO_STAFF_PASSWORD') },
   };
 }

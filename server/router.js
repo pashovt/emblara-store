@@ -11,6 +11,7 @@ import * as sales from './sales.js';
 import * as portal from './portal.js';
 import * as artwork from './artwork.js';
 import { withContext } from './context.js';
+import * as etsy from './etsy-oauth.js';
 
 // price_pence is the column name; the shop page reads it (services have a fixed price, garments are null).
 const PUBLIC_FIELDS = ({ id, slug, name, category, kind, blurb, material, fabric, price_pence, config: c, images, available, sort }) => ({ id, slug, name, category, kind, blurb, material, fabric, price_pence, config: c, images, available, sort });
@@ -30,6 +31,9 @@ export async function handle(req, res) {
       const out = await withContext({ flow: 'webhook' }, () => processWebhook(raw, req.headers['stripe-signature']));
       return send(res, 200, out);
     }
+
+    // Cross-site redirect from Etsy: it validates a signed, short-lived PKCE cookie.
+    if (route === 'GET /etsy/oauth/callback') return await withContext({ flow: 'etsy_oauth' }, () => etsy.callback(req, res, url, secure));
 
     const unsafe = assertSafe(cfg, { needPayments: route === 'POST /checkout' });
     if (unsafe) throw new HttpError(503, unsafe);
@@ -82,6 +86,10 @@ export async function handle(req, res) {
       return send(res, 200, { email: who.email }, { 'Set-Cookie': sessionCookie(who, secure) });
     }
     if (route === 'POST /admin/logout') return send(res, 200, { ok: true }, { 'Set-Cookie': clearCookie(secure) });
+    if (route === 'GET /admin/etsy/oauth/start') {
+      await requireStaff(req);
+      return etsy.start(req, res, secure);
+    }
 
     if (url.pathname.startsWith('/api/admin/')) {
       const staff = await requireStaff(req);

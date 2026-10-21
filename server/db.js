@@ -96,6 +96,14 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, artworkBucket, endpoin
       }
       return (await app((c) => c.query('select * from emblara.products order by sort, name'))).rows.map(outProduct);
     },
+    async saveEtsyOAuthCredential(ciphertext, scopes) {
+      await app((c) => c.query(
+        `insert into emblara.oauth_credentials (provider, token_ciphertext, scopes)
+         values ('etsy', $1, $2)
+         on conflict (provider) do update set token_ciphertext = excluded.token_ciphertext, scopes = excluded.scopes, updated_at = now()`,
+        [ciphertext, scopes],
+      ));
+    },
     async getProduct(id) {
       if (!/^[0-9a-f-]{36}$/i.test(String(id))) return null;
       return outProduct((await app((c) => c.query('select * from emblara.products where id = $1', [id]))).rows[0] ?? null);
