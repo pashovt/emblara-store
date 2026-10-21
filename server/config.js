@@ -14,13 +14,14 @@ export function config() {
   const stripeKey = env('STRIPE_SECRET_KEY');
   const appUrl = env('EMBLARA_APP_DATABASE_URL');
   const publicUrl = env('EMBLARA_PUBLIC_DATABASE_URL');
+  const portalUrl = env('EMBLARA_PORTAL_DATABASE_URL');
   return {
     onVercel: !!env('VERCEL'),
     // The runtime roles, not the owner: emblara_app (the store server) and emblara_public
     // (read-only, published AND available products). Product photos live in a public-read
     // Neon Object Storage bucket; AWS_* are the standard variables `neon env pull` writes.
     neon: appUrl && publicUrl
-      ? { appUrl, publicUrl, bucket: env('NEON_BUCKET') || 'emblara-products', endpoint: env('AWS_ENDPOINT_URL_S3').replace(/\/$/, ''), region: env('AWS_REGION') || 'eu-central-1' }
+      ? { appUrl, publicUrl, portalUrl: portalUrl || null, bucket: env('NEON_BUCKET') || 'emblara-products', artworkBucket: env('NEON_ARTWORK_BUCKET') || 'emblara-artwork', endpoint: env('AWS_ENDPOINT_URL_S3').replace(/\/$/, ''), region: env('AWS_REGION') || 'eu-central-1' }
       : null,
     stripeKey,
     // Real Stripe signing secret, or the demo secret used by the demo payment page.
@@ -28,6 +29,11 @@ export function config() {
     demoPayments: !stripeKey,
     siteUrl: env('SITE_URL').replace(/\/$/, ''),
     sessionSecret: env('ADMIN_SESSION_SECRET'),
+    etsy: {
+      keystring: env('ETSY_KEYSTRING'),
+      sharedSecret: env('ETSY_SHARED_SECRET'),
+      tokenEncryptionKey: env('ETSY_TOKEN_ENCRYPTION_KEY'),
+    },
     demoStaff: { email: env('DEMO_STAFF_EMAIL').toLowerCase(), password: env('DEMO_STAFF_PASSWORD') },
   };
 }

@@ -20,9 +20,11 @@ import { site } from '../src/data/site.js';
 
 const stripeClient = () => new Stripe(config().stripeKey || 'sk_test_demo_key_not_used_for_network_calls');
 
-export async function startCheckout({ items, notes, artwork }, siteOrigin) {
+export async function startCheckout({ items, notes, artwork, artwork_id: artworkId }, siteOrigin) {
   const cfg = config();
   const { lines, total_pence } = await priceCart(items);
+  const attachedArtworkId = artwork === 'attached' ? String(artworkId ?? '') : null;
+  if (artwork === 'attached' && !/^[0-9a-f-]{36}$/i.test(attachedArtworkId)) throw new HttpError(422, 'Upload the original artwork before checkout.');
 
   const order = await db().createOrder(
     {
@@ -40,7 +42,7 @@ export async function startCheckout({ items, notes, artwork }, siteOrigin) {
       quantity: l.quantity,
       unit_amount_pence: l.unit_pence,
       line_amount_pence: l.line_pence,
-    })),
+    })), attachedArtworkId,
   );
 
   let session;

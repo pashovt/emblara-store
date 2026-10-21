@@ -3210,21 +3210,24 @@ main:focus {
   color: var(--on-dark);
 }
 
-.adm__bar nav {
+.adm__sections {
   display: flex;
   gap: 1.25rem;
   flex: 1;
+  flex-wrap: wrap;
 }
 
-.adm__bar a {
+.adm__sections a,
+.adm__shop {
   color: var(--on-dark-dim);
   text-decoration: none;
   padding: 0.35rem 0;
   border-bottom: 2px solid transparent;
 }
 
-.adm__bar a[aria-current='page'],
-.adm__bar a:hover {
+.adm__sections a[aria-current='page'],
+.adm__sections a:hover,
+.adm__shop:hover {
   color: var(--on-dark);
   border-bottom-color: var(--copper-lit);
 }
@@ -3248,6 +3251,11 @@ main:focus {
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem var(--pad) 5rem;
+}
+
+.adm__coming {
+  min-height: 18rem;
+  padding-top: 1rem;
 }
 
 .adm__h1 {
@@ -3676,10 +3684,12 @@ main:focus {
   .adm__bar {
     gap: 0.5rem 1rem;
   }
-  .adm__bar nav {
+  .adm__sections {
     order: 3;
     flex-basis: 100%;
     gap: 1.25rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
   .adm__row {
     grid-template-columns: 1fr;

@@ -36,6 +36,35 @@ const invalid = (fn) => {
 };
 
 export const listProducts = async () => ({ products: await db().listProducts() });
+export const getBusinessProfile = async () => ({ profile: await db().businessProfile() });
+export const listCatalogue = async () => ({ items: await db().catalogueItems() });
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PROFILE_TEXT = new Set(['trading_name', 'legal_name', 'address_line1', 'address_line2', 'city', 'postcode', 'country', 'company_number', 'email', 'phone', 'bank_account_name', 'bank_sort_code', 'bank_account_number', 'default_delivery_estimate', 'default_artwork_note', 'default_returns_note']);
+const cleanProfile = (input) => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new HttpError(422, 'Enter the business profile details.');
+  const out = {};
+  for (const key of PROFILE_TEXT) if (key in input) out[key] = typeof input[key] === 'string' ? input[key].trim() : '';
+  for (const key of ['default_payment_terms_days', 'default_deposit_percent']) {
+    if (!(key in input) || input[key] === '') continue;
+    const number = Number(input[key]);
+    if (!Number.isFinite(number)) throw new HttpError(422, 'Enter valid quotation defaults.');
+    out[key] = number;
+  }
+  if (!out.trading_name || !out.email) throw new HttpError(422, 'Trading name and email are required.');
+  return out;
+};
+export const saveBusinessProfile = async (profile) => ({ profile: await db().saveBusinessProfile(cleanProfile(profile)) });
+export async function linkCatalogueProduct(input) {
+  if (!UUID.test(String(input?.product_id)) || !UUID.test(String(input?.catalogue_item_id))) throw new HttpError(422, 'Choose a store product and catalogue item.');
+  await db().linkCatalogueProduct(input.product_id, input.catalogue_item_id);
+  return { ok: true };
+}
+export async function recordStockMovement(input) {
+  const quantity = Number(input?.quantity);
+  const note = typeof input?.note === 'string' ? input.note.trim() : '';
+  if (!UUID.test(String(input?.item_id)) || !UUID.test(String(input?.request_id)) || !['IN', 'OUT'].includes(input?.type) || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000 || note.length > 500 || (input.type === 'OUT' && !note)) throw new HttpError(422, 'Enter a valid stock movement. Stock going out needs a note.');
+  return { movement: await db().recordStockMovement({ itemId: input.item_id, type: input.type, quantity, note, requestId: input.request_id }) };
+}
 
 export async function saveProduct(input, id) {
   const row = invalid(() => parseProductInput(input, db().imagePrefixes()));
@@ -64,6 +93,10 @@ export async function saveProduct(input, id) {
 }
 
 export async function listOrders(statusFilter) {
+  if (db().kind === 'postgres') {
+    const orders = await db().journeyOrders(statusFilter || null);
+    return { orders, counts: { paid: orders.filter((o) => o.stage === 'paid').length, processing: orders.filter((o) => o.stage === 'in_production').length } };
+  }
   const orders = await db().listOrders(FULFILMENT_OF[statusFilter] ? [FULFILMENT_OF[statusFilter]] : undefined);
   const list = orders.map(forList).sort(byAttention);
   return { orders: list, counts: { paid: list.filter((o) => o.status === 'paid').length, processing: list.filter((o) => o.status === 'processing').length } };
@@ -71,22 +104,24 @@ export async function listOrders(statusFilter) {
 
 export async function getOrder(id) {
   const order = await db().getOrder({ id });
-  if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
+  if (!order || (db().kind !== 'postgres' && !isVisible(order))) throw new HttpError(404, 'Order not found.');
   const items = await db().orderItems(order.id);
+  const artworks = await db().orderArtwork(order.id);
   return {
     order: {
-      id: order.id, number: order.number, status: withStatus(order).status,
+      id: order.id, number: order.number, status: order.stage ?? withStatus(order).status, source: order.source ?? 'website', stage: order.stage ?? withStatus(order).status, artwork_status: order.artwork_status ?? (order.artwork === 'attached' ? 'received' : 'not_received'), artwork_note: order.artwork_note ?? null,
       payment_status: order.payment_status, fulfillment_status: order.fulfillment_status,
       customer_name: order.customer_name, email: order.email, phone: order.phone, shipping: order.shipping,
       notes: order.notes, artwork: order.artwork, amount_total_pence: order.amount_total_pence, currency: order.currency,
       paid_at: order.paid_at, created_at: order.created_at, fulfilment_method: FULFILMENT_METHOD, payment_reference: order.stripe_payment_intent,
     },
-    items: items.map((i) => ({ id: i.id, product_name: i.product_name, options: i.options, quantity: i.quantity, unit_amount_pence: i.unit_amount_pence, line_amount_pence: i.line_amount_pence })),
+    items: items.map((i) => ({ id: i.id, product_name: i.product_name, options: i.options, quantity: i.quantity, unit_amount_pence: i.unit_amount_pence, line_amount_pence: i.line_amount_pence })), artworks,
   };
 }
 
 // Paid -> Processing -> Fulfilled, one step at a time, never backwards.
 export async function advanceOrder(id, to) {
+  if (db().kind === 'postgres') return { order: await db().advanceJourneyOrder(id, to) };
   const order = await db().getOrder({ id });
   if (!isVisible(order)) throw new HttpError(404, 'Order not found.');
   const from = withStatus(order).status;
@@ -95,6 +130,10 @@ export async function advanceOrder(id, to) {
   const updated = await db().patchOrder(id, { fulfillment_status: to }, { payment_status: 'paid', fulfillment_status: order.fulfillment_status });
   if (!updated) throw new HttpError(409, 'The order changed. Reload and try again.');
   return { order: forList(updated) };
+}
+export async function setArtworkStatus(id, input) {
+  if (!UUID.test(String(id)) || !['not_received', 'received', 'approved', 'needs_changes'].includes(input?.status) || (input.status === 'needs_changes' && !String(input.note ?? '').trim())) throw new HttpError(422, 'Choose a valid artwork status and add a note when changes are needed.');
+  return { order: await db().setArtworkStatus(id, input.status, String(input.note ?? '').trim() || null) };
 }
 
 // Images: PNG, JPEG or WebP only, identified by content (not by the claimed type).

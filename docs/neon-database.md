@@ -11,8 +11,8 @@ Nothing here is shared with Rest & Relax or any other business, so none of the s
 | Project | `emblara-store` | org `org-polished-meadow-53904041`, branch `main`. Linked by `.neon` (git-ignored). |
 | Schema | `emblara` | Created by `db/migrations/001_emblara_store.sql`. |
 | Tables | `products`, `orders`, `order_items`, `staff` | RLS enabled on all four. |
-| Roles | `emblara_public`, `emblara_app` | Login roles that own nothing, so RLS applies to both. |
-| Functions | `emblara.is_staff()`, `staff_login()`, `flow()` | The first two are `security definer` with an empty `search_path`. Only `emblara_app` can run them. |
+| Roles | `emblara_public`, `emblara_app`, `emblara_portal` | Login roles that own nothing. The portal role has no table privileges. |
+| Functions | `emblara.is_staff()`, `staff_login()`, `flow()`, `acting_staff_id()` | The staff functions use an empty `search_path`; only `emblara_app` can run them. |
 | Bucket | `emblara-products` | Neon Object Storage, `public_read`. Declared in `neon.ts`. |
 
 ## Models
@@ -87,6 +87,8 @@ Local: all in `.env.local`, written by `neon link`, `neon deploy` and `npm run d
 |---|---|---|
 | `EMBLARA_APP_DATABASE_URL` | store server (role `emblara_app`, pooled) | `db:migrate --set-passwords` |
 | `EMBLARA_PUBLIC_DATABASE_URL` | catalogue reads (role `emblara_public`, pooled) | `db:migrate --set-passwords` |
+| `EMBLARA_PORTAL_DATABASE_URL` | quote-request and customer-link routes (role `emblara_portal`, pooled) | `db:migrate --set-passwords` |
+| `LINK_ENCRYPTION_KEY` | 32 random bytes, base64 encoded; encrypts staff-copyable quote links | you |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION` | photo uploads and URLs | `neon deploy` / `neon env pull` |
 | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` | admin scripts only (owner) | `neon link` |
 | `ADMIN_SESSION_SECRET` | dashboard session cookie | you |
@@ -94,7 +96,7 @@ Local: all in `.env.local`, written by `neon link`, `neon deploy` and `npm run d
 | `STRIPE_WEBHOOK_SECRET` | verifies webhook signatures (`whsec_...`) | the webhook endpoint in the Stripe dashboard |
 | `SITE_URL` | optional public origin for Stripe redirects | you |
 
-**Vercel** (project `emblara-store`, Production and Preview; done 2026-10-16): `EMBLARA_APP_DATABASE_URL`, `EMBLARA_PUBLIC_DATABASE_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (all Sensitive), `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, and a Vercel-only `ADMIN_SESSION_SECRET` (Sensitive). The owner `DATABASE_URL*` is deliberately not in Vercel: the running site never needs it. The store refuses to start on Vercel without the two role URLs. Preview deployments currently share the production database; create a Neon dev branch for them if that becomes a concern. Stripe variables come next.
+**Vercel** (project `emblara-store`, Production and Preview; done 2026-10-16): `EMBLARA_APP_DATABASE_URL`, `EMBLARA_PUBLIC_DATABASE_URL`, `EMBLARA_PORTAL_DATABASE_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (all Sensitive), `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, and a Vercel-only `ADMIN_SESSION_SECRET` (Sensitive). The owner `DATABASE_URL*` is deliberately not in Vercel: the running site never needs it. The store refuses to start on Vercel without the two existing store role URLs; customer-link routes additionally need the portal URL. Preview deployments currently share the production database; create a Neon dev branch for them if that becomes a concern. Stripe variables come next.
 
 ## Check the rules hold
 

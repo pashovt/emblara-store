@@ -134,6 +134,7 @@ The storefront now sits on a small backend: real products, guest checkout throug
 | Tables, RLS, roles, photo bucket (Neon project `emblara-store`) | `db/migrations/001_emblara_store.sql`, `neon.ts`, `docs/neon-database.md` |
 | First merchant (script run once by the owner, hidden password prompt) | `npm run db:create-staff` |
 | Seed the launch range / check the database rules | `npm run seed` (only when empty) / `npm run db:check` |
+| Back-office foundation and phase status | `docs/backoffice.md` |
 
 **Price authority.** `/api/checkout` accepts product id, finish, colour, size, logo position, quantity (plus logo file name and notes) and nothing about money. `server/checkout.js` validates every option against the stored product, rejects unpublished or unavailable products, and recomputes the order with the same `src/lib/pricing.js` model the shop uses for display. The Stripe session is created for exactly that amount.
 
@@ -141,6 +142,6 @@ The storefront now sits on a small backend: real products, guest checkout throug
 
 **Stock.** A product is `available` or not; the merchant flips it in the dashboard and checkout enforces it. There are no quantities.
 
-**Going live.** Follow `docs/neon-database.md`: the Neon project, schema and bucket exist; run `npm run db:create-staff`, set the two role URLs, the `AWS_*` variables, Stripe and `ADMIN_SESSION_SECRET` in Vercel, and point a Stripe webhook at `/api/stripe-webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.expired`. A Vercel deployment with no Neon role URLs refuses to start the store (it never falls back to the local file or the demo payment page).
+**Going live.** Follow `docs/neon-database.md`: the Neon project, schema and bucket exist; run `npm run db:create-staff`, set the two store role URLs and the portal URL for customer-link routes, the `AWS_*` variables, Stripe and `ADMIN_SESSION_SECRET` in Vercel, and point a Stripe webhook at `/api/stripe-webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.expired`. A Vercel deployment with no Neon role URLs refuses to start the store (it never falls back to the local file or the demo payment page).
 
 **Known limits of this demo.** The customer's logo file never leaves their browser (the order records its file name; the "send it after ordering" flow is still to build). The dashboard prices garments from supplier costs, as the existing model does, so editing a product means editing costs, sizes and positions, not typing a retail price. Delivery of confirmation emails is excluded from version 1; Stripe's own receipt is the only email. Live Stripe has not been run against a real account; the Neon path is tested end to end (see `npm run db:check`).

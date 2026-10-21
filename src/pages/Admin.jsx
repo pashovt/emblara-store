@@ -1,24 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CATEGORIES, METHOD_IDS, fromRow } from '../lib/catalogue.js';
 import { unitPrice } from '../lib/pricing.js';
 import { gbp } from '../lib/utils.js';
+import { api, useLoad } from '../admin/api.js';
+import Navigation from '../admin/Navigation.jsx';
+import ComingSoon from '../admin/ComingSoon.jsx';
+import Catalogue from '../admin/Catalogue.jsx';
+import Settings from '../admin/Settings.jsx';
+import Sales from '../admin/Sales.jsx';
 
 // Store Dashboard. Everything the merchant does to products and orders goes
 // through /api/admin/*, which re-checks the signed session cookie on every call.
 
-async function api(path, { method = 'GET', body, raw } = {}) {
-  const res = await fetch(`/api/admin/${path}`, {
-    method,
-    headers: raw ? { 'content-type': raw.type } : body ? { 'content-type': 'application/json' } : {},
-    body: raw ?? (body ? JSON.stringify(body) : undefined),
-    credentials: 'same-origin',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error || 'Request failed.'), { status: res.status });
-  return data;
-}
-
-const STATUS = { paid: 'Paid', processing: 'Processing', fulfilled: 'Fulfilled' };
+const STATUS = { new: 'New', awaiting_payment: 'Awaiting payment', paid: 'Paid', in_production: 'In production', shipped: 'Shipped', delivered: 'Delivered', closed: 'Closed', cancelled: 'Cancelled', processing: 'Processing', fulfilled: 'Fulfilled' };
 const when = (iso) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '');
 const pounds = (pence) => gbp(pence / 100);
 
@@ -40,21 +34,22 @@ export default function Admin({ route }) {
   if (!email) return <Login onDone={setEmail} />;
   if (email === 'denied') return <NoAccess onSignOut={onSignOut} />;
 
-  const section = route.param === 'products' ? 'products' : 'orders';
+  const section = ['orders', 'sales', 'support', 'catalogue', 'products', 'settings'].includes(route.param) ? route.param : 'orders';
   return (
     <div className="adm">
       <header className="adm__bar">
         <strong className="adm__brand">Store Dashboard</strong>
-        <nav aria-label="Dashboard">
-          <a href="#/admin/orders" aria-current={section === 'orders' ? 'page' : undefined}>Orders</a>
-          <a href="#/admin/products" aria-current={section === 'products' ? 'page' : undefined}>Products</a>
-          <a href="#/shop">View shop</a>
-        </nav>
+        <Navigation section={section} />
+        <a className="adm__shop" href="#/shop">View shop</a>
         <span className="adm__who">{email} · <button type="button" className="link-button" onClick={onSignOut}>Sign out</button></span>
       </header>
       <div className="adm__body">
         {section === 'orders' && (route.sub ? <OrderDetail id={route.sub} /> : <Orders />)}
         {section === 'products' && (route.sub ? <ProductForm id={route.sub} /> : <Products />)}
+        {section === 'catalogue' && <Catalogue />}
+        {section === 'settings' && <Settings />}
+        {section === 'sales' && <Sales />}
+        {section === 'support' && <ComingSoon section="Support" />}
       </div>
     </div>
   );
@@ -106,23 +101,6 @@ function Login({ onDone }) {
   );
 }
 
-// Loads from the API; a 401 means the session ended, so reload to the sign-in.
-function useLoad(path, deps = []) {
-  const [state, setState] = useState({ loading: true });
-  const reload = useCallback(() => {
-    setState((s) => ({ ...s, loading: true }));
-    api(path).then(
-      (data) => setState({ data }),
-      (error) => {
-        if (error.status === 401 || error.status === 403) window.location.reload();
-        setState({ error: error.message });
-      },
-    );
-  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(reload, [reload, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
-  return [state, reload];
-}
-
 // ----------------------------------------------------------------- orders
 // Payment and fulfilment are separate states. "Paid" here means paid and not yet started.
 const PAYMENT = { paid: 'Paid', pending: 'Not paid', expired: 'Expired' };
@@ -144,7 +122,7 @@ function Orders() {
         </p>
       )}
       <div className="adm__tabs" role="group" aria-label="Filter by status">
-        {[['', 'All'], ['paid', 'Paid'], ['processing', 'Processing'], ['fulfilled', 'Fulfilled']].map(([v, label]) => (
+        {[['', 'All'], ['new', 'New'], ['awaiting_payment', 'Awaiting payment'], ['paid', 'Paid'], ['in_production', 'In production'], ['shipped', 'Shipped'], ['delivered', 'Delivered'], ['closed', 'Closed']].map(([v, label]) => (
           <button key={v} type="button" aria-pressed={filter === v} onClick={() => setFilter(v)}>{label}</button>
         ))}
       </div>
@@ -158,7 +136,7 @@ function Orders() {
               {orders.map((o) => (
                 <tr key={o.id} className={o.status === 'paid' ? 'is-attention' : undefined}>
                   <td data-label="Order"><a href={`#/admin/orders/${o.id}`}><strong>{o.number}</strong></a></td>
-                  <td data-label="Paid">{when(o.paid_at)}</td>
+                  <td data-label="Paid">{when(o.paid_at) || '—'}</td>
                   <td data-label="Customer">{o.customer_name}<small>{o.email}</small></td>
                   <td data-label="Delivery">{o.fulfilment_method}<small>{o.city}</small></td>
                   <td data-label="Total">{pounds(o.amount_total_pence)}</td>
@@ -178,7 +156,7 @@ function OrderDetail({ id }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const { order, items = [] } = state.data ?? {};
-  const next = { paid: ['processing', 'Start processing'], processing: ['fulfilled', 'Mark as fulfilled'] }[order?.status];
+  const next = { new: ['awaiting_payment', 'Await payment'], in_production: ['shipped', 'Mark as shipped'], shipped: ['delivered', 'Mark as delivered'], delivered: ['closed', 'Close order'], paid: ['in_production', 'Create production order first'] }[order?.stage];
 
   const advance = async () => {
     setBusy(true);
@@ -196,7 +174,7 @@ function OrderDetail({ id }) {
   if (state.error) return <p className="adm__error">{state.error} <a href="#/admin/orders">Back to orders</a></p>;
   if (!order) return <p className="adm__muted">Loading…</p>;
   const ship = order.shipping;
-  const steps = ['paid', 'processing', 'fulfilled'];
+  const steps = ['new', 'awaiting_payment', 'paid', 'in_production', 'shipped', 'delivered', 'closed'];
   return (
     <section>
       <p><a href="#/admin/orders">← All orders</a></p>
@@ -221,7 +199,9 @@ function OrderDetail({ id }) {
             </address>
           ) : <p className="adm__muted">No address recorded.</p>}
           <h2>Artwork</h2>
-          <p>{order.artwork === 'attached' ? 'The customer chose a logo on the product page (see the item lines).' : 'The customer will send their logo after ordering.'}</p>
+          <p><span className="adm__badge">{STATUS[order.artwork_status] ?? order.artwork_status}</span> {order.artwork_note}</p>
+          {state.data.artworks?.length ? <ul>{state.data.artworks.map((file) => <li key={file.id}><a href={`/api/admin/artwork?id=${encodeURIComponent(file.id)}`}>{file.file_name}</a> · {file.kind}</li>)}</ul> : <p className="adm__muted">No private artwork uploaded yet.</p>}
+          <p><button className="pill" type="button" onClick={async () => { try { await api(`orders/artwork-status?id=${encodeURIComponent(id)}`, { method: 'POST', body: { status: 'approved' } }); reload(); } catch (err) { setError(err.message); } }}>Approve artwork</button> <button className="pill" type="button" onClick={async () => { const note = window.prompt('What needs changing?'); if (!note) return; try { await api(`orders/artwork-status?id=${encodeURIComponent(id)}`, { method: 'POST', body: { status: 'needs_changes', note } }); reload(); } catch (err) { setError(err.message); } }}>Request changes</button></p>
           {order.notes && <><h2>Notes for the proof</h2><p>{order.notes}</p></>}
         </div>
         <div className="adm__card">
@@ -242,9 +222,7 @@ function OrderDetail({ id }) {
           </table>
           <p className="adm__muted">Prices are the ones captured at purchase. Editing a product later never changes this order. “Each” is the line total divided by the quantity, rounded to the penny.</p>
           {error && <p className="adm__error" role="alert">{error}</p>}
-          {next ? (
-            <button type="button" className="pill pill--copper pill--block" disabled={busy} onClick={advance}>{next[1]}</button>
-          ) : <p><strong>Fulfilled.</strong> Nothing more to do.</p>}
+          {next && order.stage !== 'paid' ? <button type="button" className="pill pill--copper pill--block" disabled={busy} onClick={advance}>{next[1]}</button> : <p><strong>{order.stage === 'paid' ? 'Ready for production.' : STATUS[order.stage] ?? 'Complete'}.</strong></p>}
           {order.payment_reference && (
             <details className="adm__ref"><summary>Payment reference</summary><p className="adm__muted">For finding this payment in Stripe: <code>{order.payment_reference}</code></p></details>
           )}

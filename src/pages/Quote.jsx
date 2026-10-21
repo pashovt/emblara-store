@@ -1,0 +1,12 @@
+import { useEffect, useState } from 'react';
+import { gbp } from '../lib/utils.js';
+
+export default function Quote({ token }) {
+  const [state, setState] = useState({ loading: true }); const [message, setMessage] = useState('');
+  useEffect(() => { document.querySelector('meta[name="robots"]')?.remove(); const meta = document.createElement('meta'); meta.name = 'robots'; meta.content = 'noindex'; document.head.append(meta); fetch('/api/portal/quote', { method: 'POST', headers: { 'X-Token': token } }).then(async (res) => { const body = await res.json(); if (!res.ok) throw new Error(body.error); setState({ quote: body.quote }); }, (error) => setState({ error: error.message })).catch((error) => setState({ error: error.message })); return () => meta.remove(); }, [token]);
+  const respond = async (decision) => { setMessage(''); try { const res = await fetch('/api/portal/quote/respond', { method: 'POST', headers: { 'content-type': 'application/json', 'X-Token': token }, body: JSON.stringify({ decision }) }); const body = await res.json(); if (!res.ok) throw new Error(body.error); setMessage(decision === 'accepted' ? 'Thank you — your acceptance has been recorded.' : 'This quotation has been declined.'); } catch (error) { setMessage(error.message); } };
+  if (state.loading) return <section className="page page--legal"><p>Loading quotation…</p></section>;
+  if (state.error) return <section className="page page--legal"><h1 className="h2">Quote unavailable</h1><p>{state.error}</p></section>;
+  const quote = state.quote;
+  return <section className="page page--legal"><p className="eyebrow">EMBLARA</p><h1 className="h2">Your <em>quotation</em></h1><p><strong>{quote.number}</strong> · valid until {quote.valid_until}</p><table className="adm__table"><tbody>{quote.lines.map((line, index) => <tr key={index}><td>{line.description}<small>{line.quantity} × {gbp(line.unit_price_pence / 100)}</small></td><td>{gbp(line.line_total_pence / 100)}</td></tr>)}</tbody><tfoot><tr><td>Total</td><td><strong>{gbp(quote.total_pence / 100)}</strong></td></tr></tfoot></table><p>{quote.timeline_text}</p><p>{quote.artwork_note}</p>{message ? <p role="status">{message}</p> : <p><button className="pill pill--copper" onClick={() => respond('accepted')}>Accept quotation</button> <button className="pill pill--ghost" onClick={() => respond('declined')}>Decline</button></p>}<p><a href={`mailto:support@emblara.co.uk?subject=${encodeURIComponent(`Changes to ${quote.number}`)}`}>Ask for changes</a></p></section>;
+}

@@ -7,6 +7,10 @@ export default defineConfig({
   auth: false, // staff sign-in is the emblara.staff table (see docs/neon-database.md)
   buckets: {
     "emblara-products": { access: "public_read" },
+    // Customer originals are never available by object URL. The server gives a
+    // browser a short-lived PUT capability for one new key, then staff download
+    // it through the authenticated application route.
+    "emblara-artwork": { access: "private" },
   },
   branch: (branch) => {
     if (branch.isDefault) return {};
