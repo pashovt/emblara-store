@@ -21,8 +21,12 @@ const titleFor = ({ product, method }) => `EMBLARA ${product.name} — ${method.
 export function etsyUserId(accessToken) {
   const value = String(accessToken ?? '').split('.', 1)[0];
   if (!/^\d+$/.test(value)) return null;
-  const userId = Number(value);
-  return Number.isSafeInteger(userId) && userId > 0 ? userId : null;
+  return etsyNumericId(value);
+}
+
+function etsyNumericId(value) {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 export function buildDraftPlan(products) {
@@ -114,10 +118,12 @@ async function setup() {
   const userId = etsyUserId(token);
   if (!token || !userId) throw new HttpError(503, 'Etsy authorisation needs reconnecting.');
   const shops = results(await api(`/users/${userId}/shops`, { token, cfg }));
-  if (shops.length !== 1 || !Number.isSafeInteger(shops[0].shop_id)) throw new HttpError(502, 'Etsy shop selection needs attention.');
+  const shopId = shops.length === 1 ? etsyNumericId(shops[0].shop_id) : null;
+  if (!shopId) throw new HttpError(502, 'Etsy shop selection needs attention.');
+  const shop = { ...shops[0], shop_id: shopId };
   const reference = await api(`/listings/${REFERENCE_LISTING_ID}`, { token, cfg });
-  if (reference.shop_id !== shops[0].shop_id || !Number.isSafeInteger(reference.taxonomy_id) || !Number.isSafeInteger(reference.shipping_profile_id)) throw new HttpError(502, 'The Etsy reference listing is incomplete.');
-  return { cfg, token, shop: shops[0], reference };
+  if (etsyNumericId(reference.shop_id) !== shopId || !Number.isSafeInteger(reference.taxonomy_id) || !Number.isSafeInteger(reference.shipping_profile_id)) throw new HttpError(502, 'The Etsy reference listing is incomplete.');
+  return { cfg, token, shop, reference };
 }
 
 async function taggedListings(shopId, credentials) {
