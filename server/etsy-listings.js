@@ -81,7 +81,17 @@ async function api(path, { token, cfg, method = 'GET', body } = {}) {
   });
   if (!response.ok) {
     if (response.status === 401) throw new HttpError(503, 'Etsy authorisation needs reconnecting.');
-    throw new HttpError(502, 'Etsy rejected the listing request.');
+    const detail = await response.text().catch(() => '');
+    // Etsy's validation response is useful to the authenticated staff member,
+    // but never include arbitrary upstream markup or credentials in our API.
+    const safeDetail = detail
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/[^\p{L}\p{N}\p{P}\p{Zs}]/gu, '')
+      .slice(0, 300)
+      .trim();
+    throw new HttpError(502, safeDetail
+      ? `Etsy rejected the listing request: ${safeDetail}`
+      : 'Etsy rejected the listing request.');
   }
   return response.json();
 }
