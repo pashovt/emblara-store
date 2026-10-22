@@ -40,6 +40,7 @@ describe('Etsy draft listing plan', () => {
     assert.equal(inventory.products[0].offerings[0].quantity, 999);
     assert.equal(inventory.products[0].offerings[0].price, 25.36);
     assert.deepEqual(inventory.price_on_property, [513, 514, 516]);
+    assert.deepEqual(inventory.sku_on_property, [513, 514, 516]);
   });
 
   it('gives each draft buyer-facing order and artwork guidance', () => {
