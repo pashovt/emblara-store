@@ -90,8 +90,8 @@ async function api(path, { token, cfg, method = 'GET', body } = {}) {
       .slice(0, 300)
       .trim();
     throw new HttpError(502, safeDetail
-      ? `Etsy rejected the listing request: ${safeDetail}`
-      : 'Etsy rejected the listing request.');
+      ? `Etsy rejected ${method} ${path}: ${safeDetail}`
+      : `Etsy rejected ${method} ${path}.`);
   }
   return response.json();
 }
