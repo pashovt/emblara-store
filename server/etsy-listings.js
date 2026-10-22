@@ -59,7 +59,10 @@ export function listingInventory(product, method, readinessStateId = null) {
       offerings: [offering],
     };
   })));
-  return { products, price_on_property: [514, 516], quantity_on_property: [], sku_on_property: [], readiness_state_on_property: [] };
+  // Etsy accepts a price matrix for zero, one, or every configured variation
+  // property. Price is colour-independent here, but including Colour keeps the
+  // three-dimensional inventory valid while preserving the matrix price.
+  return { products, price_on_property: VARIATIONS.map(([propertyId]) => propertyId), quantity_on_property: [], sku_on_property: [], readiness_state_on_property: [] };
 }
 
 function settings() {

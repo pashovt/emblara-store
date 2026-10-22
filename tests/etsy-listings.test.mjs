@@ -35,7 +35,7 @@ describe('Etsy draft listing plan', () => {
     ]);
     assert.equal(inventory.products[0].offerings[0].quantity, 999);
     assert.equal(inventory.products[0].offerings[0].price, 25.36);
-    assert.deepEqual(inventory.price_on_property, [514, 516]);
+    assert.deepEqual(inventory.price_on_property, [513, 514, 516]);
   });
 
   it('does not recreate a draft already marked with its Emblara product and finish tags', () => {
