@@ -261,7 +261,7 @@ function draftBody(entry, reference) {
   const inventory = listingInventory(entry.product, entry.method, reference.readiness_state_id ?? null);
   const params = new URLSearchParams({
     quantity: '999', title: entry.title, description: listingDescription(entry), price: String(inventory.products[0].offerings[0].price),
-    who_made: reference.who_made ?? 'collective', when_made: 'made_to_order', taxonomy_id: String(reference.taxonomy_id),
+    who_made: reference.who_made ?? 'collective', is_supply: 'false', when_made: 'made_to_order', taxonomy_id: String(reference.taxonomy_id),
     shipping_profile_id: String(reference.shipping_profile_id), tags: entry.tags.join(','),
   });
   if (Number.isSafeInteger(reference.return_policy_id)) params.set('return_policy_id', String(reference.return_policy_id));
