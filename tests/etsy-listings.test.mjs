@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { seedProducts } from '../src/data/catalogue-seed.js';
 import { toRow } from '../src/lib/catalogue.js';
-import { buildDraftPlan, etsyUserId, listingInventory, missingDrafts } from '../server/etsy-listings.js';
+import { buildDraftPlan, etsyUserId, listingDescription, listingInventory, missingDrafts } from '../server/etsy-listings.js';
 
 describe('Etsy draft listing plan', () => {
   it('uses the validated numeric OAuth token prefix for Etsy user endpoints', () => {
@@ -19,7 +19,10 @@ describe('Etsy draft listing plan', () => {
       'logo-hoodie-print', 'logo-hoodie-embroidery', 'crew-sweatshirt-print', 'crew-sweatshirt-embroidery',
     ]);
     assert.equal(plan.length, 11);
-    assert.ok(plan.every(({ title, product, method }) => title.startsWith('EMBLARA ') && product.service !== true && method));
+    assert.ok(plan.every(({ title, tags, product, method }) => title.length <= 140 && tags.length === 13 && product.service !== true && method));
+    assert.deepEqual(plan.find(({ key }) => key === 'mens-polo-embroidery').tags, [
+      'emblara', 'mens-polo', 'embroidery', 'custom polo shirt', 'embroidered polo', 'workwear polo', 'mens workwear', 'business uniform', 'staff uniform', 'company logo shirt', 'branded workwear', 'team polo shirt', 'corporate clothing',
+    ]);
   });
 
   it('creates colour, size and print-location inventory with matrix prices', () => {
@@ -33,9 +36,20 @@ describe('Etsy draft listing plan', () => {
       { property_id: 514, property_name: 'Size', values: ['S'] },
       { property_id: 516, property_name: 'Print location', values: ['Front'] },
     ]);
+    assert.equal(inventory.products[0].sku, 'EM-PPO-P-NAVY-S-F');
     assert.equal(inventory.products[0].offerings[0].quantity, 999);
     assert.equal(inventory.products[0].offerings[0].price, 25.36);
     assert.deepEqual(inventory.price_on_property, [513, 514, 516]);
+  });
+
+  it('gives each draft buyer-facing order and artwork guidance', () => {
+    const entry = buildDraftPlan(seedProducts).find(({ key }) => key === 'printed-polo-print');
+    const copy = listingDescription(entry);
+
+    assert.match(copy, /HOW TO ORDER/);
+    assert.match(copy, /Upload one logo or artwork file/);
+    assert.match(copy, /ARTWORK/);
+    assert.ok(copy.length > 600);
   });
 
   it('does not recreate a draft already marked with its Emblara product and finish tags', () => {
@@ -50,6 +64,6 @@ describe('Etsy draft listing plan', () => {
     const stored = seedProducts.map((product, index) => ({ ...toRow(product, index), service: product.service }));
     const plan = buildDraftPlan(stored.map((row) => row.kind === 'service' ? row : { ...row, ...row.config }));
 
-    assert.equal(plan.find(({ key }) => key === 'printed-polo-print').title, 'EMBLARA Printed polo — Printed');
+    assert.equal(plan.find(({ key }) => key === 'printed-polo-print').title, 'Custom Printed Polo Shirt, Personalised Business Logo Workwear');
   });
 });
