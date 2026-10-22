@@ -16,6 +16,15 @@ const cleanMaterial = (value) => String(value ?? '').replace(/[^\p{L}\p{Nd}\s]/g
 const tagsFor = ({ product, method }) => ['emblara', product.slug, method.id];
 const titleFor = ({ product, method }) => `EMBLARA ${product.name} — ${method.label}`;
 
+// Etsy OAuth access tokens are formatted as "numeric-user-id.token". Etsy's
+// shop endpoint requires that numeric ID rather than a __SELF__ placeholder.
+export function etsyUserId(accessToken) {
+  const value = String(accessToken ?? '').split('.', 1)[0];
+  if (!/^\d+$/.test(value)) return null;
+  const userId = Number(value);
+  return Number.isSafeInteger(userId) && userId > 0 ? userId : null;
+}
+
 export function buildDraftPlan(products) {
   return products.filter((product) => !product.service).flatMap((product) => product.methods.map((storedMethod) => {
     const method = { ...storedMethod, label: storedMethod.label ?? FINISH_LABELS[storedMethod.id] };
@@ -102,8 +111,9 @@ async function setup() {
   const { cfg, key } = settings();
   const credential = await db().getEtsyOAuthCredential();
   const token = decrypt(credential?.token_ciphertext, key).access_token;
-  if (!token) throw new HttpError(503, 'Etsy authorisation needs reconnecting.');
-  const shops = results(await api('/users/__SELF__/shops', { token, cfg }));
+  const userId = etsyUserId(token);
+  if (!token || !userId) throw new HttpError(503, 'Etsy authorisation needs reconnecting.');
+  const shops = results(await api(`/users/${userId}/shops`, { token, cfg }));
   if (shops.length !== 1 || !Number.isSafeInteger(shops[0].shop_id)) throw new HttpError(502, 'Etsy shop selection needs attention.');
   const reference = await api(`/listings/${REFERENCE_LISTING_ID}`, { token, cfg });
   if (reference.shop_id !== shops[0].shop_id || !Number.isSafeInteger(reference.taxonomy_id) || !Number.isSafeInteger(reference.shipping_profile_id)) throw new HttpError(502, 'The Etsy reference listing is incomplete.');

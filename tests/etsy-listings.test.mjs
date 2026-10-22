@@ -2,9 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { seedProducts } from '../src/data/catalogue-seed.js';
 import { toRow } from '../src/lib/catalogue.js';
-import { buildDraftPlan, listingInventory, missingDrafts } from '../server/etsy-listings.js';
+import { buildDraftPlan, etsyUserId, listingInventory, missingDrafts } from '../server/etsy-listings.js';
 
 describe('Etsy draft listing plan', () => {
+  it('uses the validated numeric OAuth token prefix for Etsy user endpoints', () => {
+    assert.equal(etsyUserId('12345678.token-value'), 12345678);
+    assert.equal(etsyUserId('not-a-number.token-value'), null);
+  });
+
   it('splits the website range into eleven finish-specific Etsy drafts', () => {
     const plan = buildDraftPlan(seedProducts);
 
