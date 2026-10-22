@@ -117,13 +117,10 @@ async function setup() {
   const token = decrypt(credential?.token_ciphertext, key).access_token;
   const userId = etsyUserId(token);
   if (!token || !userId) throw new HttpError(503, 'Etsy authorisation needs reconnecting.');
-  const shops = results(await api(`/users/${userId}/shops`, { token, cfg }));
-  const shopId = shops.length === 1 ? etsyNumericId(shops[0].shop_id) : null;
-  if (!shopId) throw new HttpError(502, 'Etsy shop selection needs attention.');
-  const shop = { ...shops[0], shop_id: shopId };
   const reference = await api(`/listings/${REFERENCE_LISTING_ID}`, { token, cfg });
-  if (etsyNumericId(reference.shop_id) !== shopId || !Number.isSafeInteger(reference.taxonomy_id) || !Number.isSafeInteger(reference.shipping_profile_id)) throw new HttpError(502, 'The Etsy reference listing is incomplete.');
-  return { cfg, token, shop, reference };
+  const shopId = etsyNumericId(reference.shop_id);
+  if (!shopId || !Number.isSafeInteger(reference.taxonomy_id) || !Number.isSafeInteger(reference.shipping_profile_id)) throw new HttpError(502, 'The Etsy reference listing is incomplete.');
+  return { cfg, token, shop: { shop_id: shopId }, reference };
 }
 
 async function taggedListings(shopId, credentials) {
