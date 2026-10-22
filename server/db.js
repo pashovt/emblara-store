@@ -104,6 +104,9 @@ function postgres({ appUrl, publicUrl, portalUrl, bucket, artworkBucket, endpoin
         [ciphertext, scopes],
       ));
     },
+    async getEtsyOAuthCredential() {
+      return (await app((c) => c.query("select token_ciphertext, scopes from emblara.oauth_credentials where provider = 'etsy'"))).rows[0] ?? null;
+    },
     async getProduct(id) {
       if (!/^[0-9a-f-]{36}$/i.test(String(id))) return null;
       return outProduct((await app((c) => c.query('select * from emblara.products where id = $1', [id]))).rows[0] ?? null);
@@ -273,6 +276,7 @@ function local() {
     async portal() {
       throw new HttpError(503, 'The back office needs the database.');
     },
+    async getEtsyOAuthCredential() { throw new HttpError(503, 'Etsy OAuth needs the database.'); },
     imagePrefixes: () => ['/api/uploads/'],
     async listProducts({ publicOnly } = {}) {
       const { products } = await load();

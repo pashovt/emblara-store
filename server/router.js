@@ -12,6 +12,7 @@ import * as portal from './portal.js';
 import * as artwork from './artwork.js';
 import { withContext } from './context.js';
 import * as etsy from './etsy-oauth.js';
+import * as etsyListings from './etsy-listings.js';
 
 // price_pence is the column name; the shop page reads it (services have a fixed price, garments are null).
 const PUBLIC_FIELDS = ({ id, slug, name, category, kind, blurb, material, fabric, price_pence, config: c, images, available, sort }) => ({ id, slug, name, category, kind, blurb, material, fabric, price_pence, config: c, images, available, sort });
@@ -119,6 +120,10 @@ export async function handle(req, res) {
           case 'GET /admin/orders': return send(res, 200, id ? await admin.getOrder(id) : await admin.listOrders(url.searchParams.get('status')));
           case 'POST /admin/orders/status': return send(res, 200, await admin.advanceOrder(id, (await readJson(req, 2_000)).status));
           case 'POST /admin/orders/artwork-status': return send(res, 200, await admin.setArtworkStatus(id, await readJson(req, 2_000)));
+          case 'POST /admin/etsy/drafts': {
+            const products = (await db().listProducts()).map((row) => row.kind === 'service' ? { ...row, service: true } : { ...row, ...row.config });
+            return send(res, 200, await withContext({ staffId: staff.sub, flow: 'etsy_oauth' }, () => etsyListings.createWebsiteDrafts(products)));
+          }
           default: throw new HttpError(404, 'Not found.');
         }
       });
