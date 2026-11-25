@@ -1,9 +1,25 @@
-# Agency CMS Home text adapter
+# Agency CMS Home text
 
-This branch maps two Home page strings from `src/data/site.js`: `tryon.eyebrow` and `tryon.sub`. The matching CMS map is `agency-cms/examples/emblara-home/source-manifest.json`. Product names, prices, stock, checkout, quotes, customer data and staff routes stay outside the map.
+The Home page can show text edited in Agency CMS. Nothing else changes: the page keeps its own code, layout, fonts, images and animation, and the CMS only supplies strings. Products, prices, stock, delivery, checkout, quotes, privacy text and staff pages are not connected.
 
-The React component renders source defaults immediately. With `VITE_AGENCY_CMS_FEED=true`, it then reads the public, versioned text feed from `https://agency-cms-ashen.vercel.app/api/site-content/emblara-store`. A missing, invalid or unavailable feed leaves the defaults in place. This request sends no cookies. It does not delay the product catalogue request or checkout.
+## What is editable (25 fields)
 
-Set `VITE_AGENCY_CMS_ORIGIN` to the exact HTTPS CMS origin when it differs from the default. `VITE_AGENCY_CMS_PREVIEW=true` enables the owner draft message bridge only for an isolated test build. The bridge accepts messages only from the exact CMS parent origin and only for the two mapped Home fields. It never accepts HTML or product data. The host must separately allow the CMS origin in its frame policy for that isolated build. Do not loosen the live store's frame policy for this test.
+Try-on hero (label, three headline lines, introduction), the promise sentence, "The range" (label, heading, button), the logo quote and its line, "How it works" (label, heading, four steps with a title and text each) and the closing call to action (heading, text, button). The list lives in `src/lib/agencyCms/fields.js`. Each field's default is the text the store already shows, taken from `src/data/site.js` or the page, so with the CMS off the page is exactly what it was.
 
-Before connecting the existing tracked Emblara record in CMS, test an isolated deployment with a disposable site record. Check Home on desktop and phone, Shop navigation, product loading, motion and consent. Test a sandbox checkout path, a draft edit and feed publish. Reload the page, restore the prior version and check the fallback when the feed fails. Then decide whether the production store should read the CMS feed. The Emblara store repository and Vercel project remain the authority for code and rollback; the CMS must not deploy a captured HTML bundle over them.
+Words wrapped in `*stars*` are shown in the existing emphasis style (italic serif). That is the only markup. Everything else is plain text, rendered by React, so HTML cannot be injected.
+
+## How it works
+
+- **Switches (build time).** `VITE_AGENCY_CMS_FEED=true` reads published text from the CMS. `VITE_AGENCY_CMS_PREVIEW=true` turns on the owner's draft preview bridge for an isolated build. `VITE_AGENCY_CMS_ORIGIN` is the CMS address (default `https://app.ukaibuilds.com`). With all three unset, the page makes no CMS request.
+- **Feed.** `GET <origin>/api/site-content/emblara-store`, no cookies, no redirects, plain JSON. Each field is checked on its own; a missing or invalid one keeps its default. If the feed is slow, down or malformed, the store's own text stays.
+- **No flash for returning visitors.** The last published copy is kept in the browser (`agency-cms:emblara-store:home`) and used on the first paint.
+- **Animation.** Only text strings change. The promise sentence is animated word by word, so that animation is rebuilt only when the number of words changes; the rest of the page's animation code is untouched. Click-to-edit markers and tab stops exist only in a preview build, so visitors get no extra focus stops.
+- **Content map.** `docs/agency-cms-home-manifest.json` is generated from the field list (`node scripts/agency-cms-manifest.mjs`) and a test keeps it in sync. Paste it into the CMS's Prepare editor, Prepare from source fields.
+
+## Checks done on 25 November 2026
+
+- With every switch off, a production build of this branch renders Home markup identical to production `main` (47,708 characters, same hash, 21 statement words, 10 reveal elements, no extra tab stops).
+- With the feed on against a local CMS, the published edits appeared, the statement grew from 21 to 24 words, and all 24 animated (dimmed at the top, partway mid-scroll, lit at the end). No console errors.
+- 40 unit tests cover field limits, the exact original statement and emphasis markup, feed parsing and fallback, the cache, and the draft preview's origin and field checks.
+
+Not yet checked: the owner draft preview inside the CMS editor on HTTPS (needs a deployed preview), a phone-width pass, and the production domain. Do these on a Preview deployment before switching the live store's feed on. Rolling back a text edit is a CMS restore; rolling back the code is the usual Vercel rollback.

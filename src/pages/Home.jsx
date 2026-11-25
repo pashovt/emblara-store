@@ -1,8 +1,10 @@
 import { useLayoutEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { marquee, statement, gallery, process } from '../data/site.js';
+import { marquee, gallery, process } from '../data/site.js';
 import TryOnHero from '../components/TryOnHero.jsx';
+import { Cms, CmsProvider, useCopy } from '../lib/agencyCms/Cms.jsx';
+import { statementWords } from '../lib/agencyCms/fields.js';
 import { bySlug, products } from '../data/products.js';
 import { Garment, Marquee, ProductCard, ThreadLines } from '../components/ui.jsx';
 
@@ -11,8 +13,10 @@ gsap.registerPlugin(ScrollTrigger);
 const DESKTOP = '(min-width: 960px) and (prefers-reduced-motion: no-preference)';
 const ANY = '(prefers-reduced-motion: no-preference)';
 
-export default function Home() {
+function HomeContent() {
   const root = useRef(null);
+  const copy = useCopy();
+  const words = statementWords(copy['promise-statement']);
 
   useLayoutEffect(() => {
     let ctx;
@@ -27,15 +31,6 @@ export default function Home() {
             q('.stitch__reveal'),
             { strokeDashoffset: 1 },
             { strokeDashoffset: 0, ease: 'none', scrollTrigger: { trigger: q('.stitch')[0], start: 'top 75%', end: 'bottom 30%', scrub: 0.6 } },
-          );
-        });
-
-        // Statement lights up word by word.
-        mm.add(ANY, () => {
-          gsap.fromTo(
-            q('.statement__word'),
-            { opacity: 0.16 },
-            { opacity: 1, stagger: 0.1, ease: 'none', scrollTrigger: { trigger: q('.statement')[0], start: 'top 70%', end: 'bottom 70%', scrub: 0.5 } },
           );
         });
 
@@ -63,6 +58,28 @@ export default function Home() {
     return () => ctx?.revert();
   }, []);
 
+  // Statement lights up word by word. Kept separate so edited text keeps its animation: it is rebuilt only when the number of
+  // words changes (the animation targets one element per word), and the rest of the page's animation is left alone.
+  useLayoutEffect(() => {
+    let ctx;
+    try {
+      ctx = gsap.context(() => {
+        const mm = gsap.matchMedia();
+        const q = gsap.utils.selector(root);
+        mm.add(ANY, () => {
+          gsap.fromTo(
+            q('.statement__word'),
+            { opacity: 0.16 },
+            { opacity: 1, stagger: 0.1, ease: 'none', scrollTrigger: { trigger: q('.statement')[0], start: 'top 70%', end: 'bottom 70%', scrub: 0.5 } },
+          );
+        });
+      }, root);
+    } catch (err) {
+      console.warn('Animations disabled:', err);
+    }
+    return () => ctx?.revert();
+  }, [words.length]);
+
   const featured = ['mens-polo', 'womens-polo', 'printed-polo', 'heavy-cotton-tee', 'logo-hoodie', 'crew-sweatshirt']
     .map((s) => products.find((p) => p.slug === s))
     .filter(Boolean);
@@ -88,9 +105,9 @@ export default function Home() {
       {/* ---------- statement ---------- */}
       <section className="statement" aria-label="Our promise">
         <ThreadLines className="threads--dark" />
-        <p className="eyebrow eyebrow--center">The EMBLARA promise</p>
+        <Cms as="p" field="promise-eyebrow" className="eyebrow eyebrow--center" />
         <p className="statement__text">
-          {statement.map(([w, serif], i) => (
+          {words.map(([w, serif], i) => (
             <span key={i} className={`statement__word${serif ? ' statement__word--serif' : ''}`}>
               {w}{' '}
             </span>
@@ -101,11 +118,9 @@ export default function Home() {
       {/* ---------- featured products ---------- */}
       <section className="featured" aria-labelledby="featured-title">
         <div className="section-head" data-reveal>
-          <p className="eyebrow">The range</p>
-          <h2 id="featured-title" className="h2">
-            Kit for <em>every</em> team.
-          </h2>
-          <a className="pill pill--ghost-dark" href="#/shop">View the full range</a>
+          <Cms as="p" field="range-eyebrow" className="eyebrow" />
+          <Cms as="h2" field="range-title" emphasis id="featured-title" className="h2" />
+          <Cms as="a" field="range-cta" className="pill pill--ghost-dark" href="#/shop" />
         </div>
         <div className="grid">
           {featured.map((p) => (
@@ -118,10 +133,8 @@ export default function Home() {
       <section className="gallery" aria-label="Logos in place">
         <ThreadLines className="threads--stone" />
         <blockquote className="gallery__quote" data-reveal>
-          <p>
-            Your logo, <em>placed</em> where you <em>approved</em> it. Every time.
-          </p>
-          <footer>Every order gets a digital proof first</footer>
+          <Cms as="p" field="quote-text" emphasis />
+          <Cms as="footer" field="quote-footer" />
         </blockquote>
         <div className="gallery__row">
           {gallery.filter((g) => bySlug[g.slug]).map((g) => (
@@ -136,17 +149,15 @@ export default function Home() {
       {/* ---------- process ---------- */}
       <section className="process" id="process" aria-labelledby="process-title">
         <div className="section-head section-head--light" data-reveal>
-          <p className="eyebrow">How it works</p>
-          <h2 id="process-title" className="h2">
-            From logo to <em>team kit</em>.
-          </h2>
+          <Cms as="p" field="process-eyebrow" className="eyebrow" />
+          <Cms as="h2" field="process-title" emphasis id="process-title" className="h2" />
         </div>
         <ol className="steps">
           {process.map((s, i) => (
             <li key={s.title} className="step" data-reveal>
               <span className="step__num">{String(i + 1).padStart(2, '0')}</span>
-              <h3 className="step__title">{s.title}</h3>
-              <p className="step__body">{s.body}</p>
+              <Cms as="h3" field={`step-${i + 1}-title`} className="step__title" />
+              <Cms as="p" field={`step-${i + 1}-body`} className="step__body" />
             </li>
           ))}
         </ol>
@@ -155,16 +166,21 @@ export default function Home() {
       {/* ---------- mock-up CTA ---------- */}
       <section className="cta" id="mockup" aria-labelledby="cta-title">
         <ThreadLines className="threads--light" />
-        <h2 id="cta-title" className="cta__title" data-reveal>
-          Send us <em>your</em> logo.
-        </h2>
-        <p className="cta__sub" data-reveal>
-          Add it at checkout or after you order. We prepare a free digital proof showing placement, size and colours. Nothing is made until you approve it.
-        </p>
+        <Cms as="h2" field="cta-title" emphasis id="cta-title" className="cta__title" data-reveal />
+        <Cms as="p" field="cta-sub" className="cta__sub" data-reveal />
         <div className="cta__actions" data-reveal>
-          <a className="pill pill--copper pill--lg" href="#/shop">Build your kit</a>
+          <Cms as="a" field="cta-button" className="pill pill--copper pill--lg" href="#/shop" />
         </div>
       </section>
     </div>
+  );
+}
+
+// The CMS text supplier wraps only this page. With the CMS switched off it just hands back the store's own text.
+export default function Home() {
+  return (
+    <CmsProvider>
+      <HomeContent />
+    </CmsProvider>
   );
 }

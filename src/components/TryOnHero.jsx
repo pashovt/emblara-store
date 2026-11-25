@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { tryon } from '../data/site.js';
@@ -7,7 +7,7 @@ import { AI_VIEW } from '../data/placements.js';
 import { gbp, motionOK, scrollToY } from '../lib/utils.js';
 import { Garment, ThreadLines } from './ui.jsx';
 import { useLogo } from '../store/logo.jsx';
-import { connectHomePreview, homeFallback, loadHomeCopy } from '../lib/agencyCms.js';
+import { Cms } from '../lib/agencyCms/Cms.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,25 +19,6 @@ const STEP = 0.62; // radians between garments on the ring
 const DESKTOP = '(min-width: 960px) and (prefers-reduced-motion: no-preference)';
 
 export default function TryOnHero() {
-  const [homeCopy, setHomeCopy] = useState(homeFallback);
-  const previewApplied = useRef(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    const cmsOrigin = import.meta.env.VITE_AGENCY_CMS_ORIGIN || 'https://agency-cms-ashen.vercel.app';
-    if (import.meta.env.VITE_AGENCY_CMS_FEED === 'true') {
-      void loadHomeCopy(cmsOrigin, { signal: controller.signal }).then((copy) => {
-        if (!controller.signal.aborted && !previewApplied.current) setHomeCopy(copy);
-      });
-    }
-    let disconnect = () => {};
-    if (import.meta.env.VITE_AGENCY_CMS_PREVIEW === 'true') {
-      disconnect = connectHomePreview(cmsOrigin, (copy) => {
-        previewApplied.current = true;
-        setHomeCopy(copy);
-      });
-    }
-    return () => { controller.abort(); disconnect(); };
-  }, []);
   const looks = tryon.order
     .map((slug) => bySlug[slug])
     .filter((p) => p?.ai)
@@ -231,15 +212,15 @@ export default function TryOnHero() {
       <ThreadLines className="threads--light" />
 
       <div className="tryon__copy">
-        <p className="eyebrow" data-cms-field="tryon-eyebrow" tabIndex={0}>{homeCopy.eyebrow}</p>
+        <Cms as="p" field="tryon-eyebrow" className="eyebrow" />
         <h1 id="tryon-title" className="tryon__title">
-          {tryon.lines.map((l) => (
-            <span key={l.text} className={`tryon__line${l.serif ? ' tryon__line--serif' : ''}`}>
-              <span>{l.text}</span>
+          {tryon.lines.map((l, i) => (
+            <span key={i} className={`tryon__line${l.serif ? ' tryon__line--serif' : ''}`}>
+              <Cms as="span" field={`tryon-line-${i + 1}`} />
             </span>
           ))}
         </h1>
-        <p className="tryon__sub" data-cms-field="tryon-sub" tabIndex={0}>{homeCopy.sub}</p>
+        <Cms as="p" field="tryon-sub" className="tryon__sub" />
         <button type="button" className="pill pill--copper tryon__logo-cta" onClick={() => setPanelOpen(true)}>
           {mode === 'custom' ? 'Change your logo' : 'See it with your logo'}
         </button>

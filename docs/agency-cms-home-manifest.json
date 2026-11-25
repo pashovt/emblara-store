@@ -1,0 +1,187 @@
+{
+  "format": "agency-cms-source",
+  "formatVersion": 1,
+  "pages": [
+    {
+      "slug": "home",
+      "title": "Home",
+      "fields": [
+        {
+          "id": "tryon-eyebrow",
+          "label": "Hero: small label above the headline",
+          "group": "Try-on hero",
+          "type": "text",
+          "value": "Virtual fitting room"
+        },
+        {
+          "id": "tryon-line-1",
+          "label": "Hero: headline, line 1",
+          "group": "Try-on hero",
+          "type": "text",
+          "value": "Try the"
+        },
+        {
+          "id": "tryon-line-2",
+          "label": "Hero: headline, line 2",
+          "group": "Try-on hero",
+          "type": "text",
+          "value": "team kit"
+        },
+        {
+          "id": "tryon-line-3",
+          "label": "Hero: headline, line 3",
+          "group": "Try-on hero",
+          "type": "text",
+          "value": "on."
+        },
+        {
+          "id": "tryon-sub",
+          "label": "Hero: introduction under the headline",
+          "group": "Try-on hero",
+          "type": "text",
+          "value": "Scroll through the range on our team of models. One logo, every garment, ready for the whole team."
+        },
+        {
+          "id": "promise-eyebrow",
+          "label": "Promise: small label",
+          "group": "Promise",
+          "type": "text",
+          "value": "The EMBLARA promise"
+        },
+        {
+          "id": "promise-statement",
+          "label": "Promise: sentence (put *stars* round words to show them in italic serif)",
+          "group": "Promise",
+          "type": "text",
+          "value": "Kit out the whole team, from the *first* polo to the *fiftieth,* with your logo *placed* exactly where you *approved* it."
+        },
+        {
+          "id": "range-eyebrow",
+          "label": "Range: small label above the heading",
+          "group": "The range",
+          "type": "text",
+          "value": "The range"
+        },
+        {
+          "id": "range-title",
+          "label": "Range: heading (put *stars* round words to emphasise them)",
+          "group": "The range",
+          "type": "text",
+          "value": "Kit for *every* team."
+        },
+        {
+          "id": "range-cta",
+          "label": "Range: button under the heading",
+          "group": "The range",
+          "type": "text",
+          "value": "View the full range"
+        },
+        {
+          "id": "quote-text",
+          "label": "Quote: text (put *stars* round words to emphasise them)",
+          "group": "Logos in place",
+          "type": "text",
+          "value": "Your logo, *placed* where you *approved* it. Every time."
+        },
+        {
+          "id": "quote-footer",
+          "label": "Quote: line under the quote",
+          "group": "Logos in place",
+          "type": "text",
+          "value": "Every order gets a digital proof first"
+        },
+        {
+          "id": "process-eyebrow",
+          "label": "How it works: small label above the heading",
+          "group": "How it works",
+          "type": "text",
+          "value": "How it works"
+        },
+        {
+          "id": "process-title",
+          "label": "How it works: heading (put *stars* round words to emphasise them)",
+          "group": "How it works",
+          "type": "text",
+          "value": "From logo to *team kit*."
+        },
+        {
+          "id": "step-1-title",
+          "label": "How it works: step 1 title",
+          "group": "How it works",
+          "type": "text",
+          "value": "Choose the kit"
+        },
+        {
+          "id": "step-1-body",
+          "label": "How it works: step 1 text",
+          "group": "How it works",
+          "type": "text",
+          "value": "Pick garments, colours and sizes. Mix sizes in one order."
+        },
+        {
+          "id": "step-2-title",
+          "label": "How it works: step 2 title",
+          "group": "How it works",
+          "type": "text",
+          "value": "Add your logo"
+        },
+        {
+          "id": "step-2-body",
+          "label": "How it works: step 2 text",
+          "group": "How it works",
+          "type": "text",
+          "value": "Upload at checkout or send it after. Vector or high-res PNG is best."
+        },
+        {
+          "id": "step-3-title",
+          "label": "How it works: step 3 title",
+          "group": "How it works",
+          "type": "text",
+          "value": "Approve the proof"
+        },
+        {
+          "id": "step-3-body",
+          "label": "How it works: step 3 text",
+          "group": "How it works",
+          "type": "text",
+          "value": "We send a digital proof with placement, size and colours. Nothing is made until you say yes."
+        },
+        {
+          "id": "step-4-title",
+          "label": "How it works: step 4 title",
+          "group": "How it works",
+          "type": "text",
+          "value": "Wear it"
+        },
+        {
+          "id": "step-4-body",
+          "label": "How it works: step 4 text",
+          "group": "How it works",
+          "type": "text",
+          "value": "Made to the approved proof and sent tracked to one UK address."
+        },
+        {
+          "id": "cta-title",
+          "label": "Closing: heading (put *stars* round words to emphasise them)",
+          "group": "Closing call to action",
+          "type": "text",
+          "value": "Send us *your* logo."
+        },
+        {
+          "id": "cta-sub",
+          "label": "Closing: text",
+          "group": "Closing call to action",
+          "type": "text",
+          "value": "Add it at checkout or after you order. We prepare a free digital proof showing placement, size and colours. Nothing is made until you approve it."
+        },
+        {
+          "id": "cta-button",
+          "label": "Closing: button",
+          "group": "Closing call to action",
+          "type": "text",
+          "value": "Build your kit"
+        }
+      ]
+    }
+  ]
+}
