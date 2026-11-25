@@ -34,7 +34,9 @@ export function CmsProvider({ children }) {
   }, []);
 
   const copy = useMemo(() => ({ ...HOME_DEFAULTS, ...published, ...(draft ?? {}) }), [published, draft]);
-  const value = useMemo(() => ({ copy, preview: PREVIEW_ON }), [copy]);
+  // Click-to-edit markers appear only after the CMS editor has framed this page and sent a valid draft. A normal visitor never
+  // gets them, even in a build with the preview bridge switched on.
+  const value = useMemo(() => ({ copy, preview: draft !== null }), [copy, draft]);
   return <CmsContext.Provider value={value}>{children}</CmsContext.Provider>;
 }
 
@@ -44,7 +46,7 @@ export function useCopy() {
 
 /**
  * One piece of editable text. It renders the same element as the page always did. With `emphasis`, *starred* words become <em>.
- * The editor's click-to-edit marker is added only in an owner preview build, so visitors never get extra tab stops.
+ * The editor's click-to-edit marker is added only while the CMS editor is previewing a draft, so visitors never get extra tab stops.
  */
 export function Cms({ field, as: Tag = 'span', emphasis = false, ...rest }) {
   const { copy, preview } = useContext(CmsContext);

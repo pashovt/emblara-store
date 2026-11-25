@@ -13,7 +13,7 @@ Words wrapped in `*stars*` are shown in the existing emphasis style (italic seri
 - **Switches (build time).** `VITE_AGENCY_CMS_FEED=true` reads published text from the CMS. `VITE_AGENCY_CMS_PREVIEW=true` turns on the owner's draft preview bridge for an isolated build. `VITE_AGENCY_CMS_ORIGIN` is the CMS address (default `https://app.ukaibuilds.com`). With all three unset, the page makes no CMS request.
 - **Feed.** `GET <origin>/api/site-content/emblara-store`, no cookies, no redirects, plain JSON. Each field is checked on its own; a missing or invalid one keeps its default. If the feed is slow, down or malformed, the store's own text stays.
 - **No flash for returning visitors.** The last published copy is kept in the browser (`agency-cms:emblara-store:home`) and used on the first paint.
-- **Animation.** Only text strings change. The promise sentence is animated word by word, so that animation is rebuilt only when the number of words changes; the rest of the page's animation code is untouched. Click-to-edit markers and tab stops exist only in a preview build, so visitors get no extra focus stops.
+- **Animation.** Only text strings change. The promise sentence is animated word by word, so that animation is rebuilt only when the number of words changes; the rest of the page's animation code is untouched. Click-to-edit markers and tab stops appear only while the CMS editor has framed the page and sent a valid draft, so a normal visitor never gets them, even in a build with the preview switch on (checked: 0 markers when not framed).
 - **Content map.** `docs/agency-cms-home-manifest.json` is generated from the field list (`node scripts/agency-cms-manifest.mjs`) and a test keeps it in sync. Paste it into the CMS's Prepare editor, Prepare from source fields.
 
 ## Checks done on 25 November 2026
@@ -22,4 +22,6 @@ Words wrapped in `*stars*` are shown in the existing emphasis style (italic seri
 - With the feed on against a local CMS, the published edits appeared, the statement grew from 21 to 24 words, and all 24 animated (dimmed at the top, partway mid-scroll, lit at the end). No console errors.
 - 40 unit tests cover field limits, the exact original statement and emphasis markup, feed parsing and fallback, the cache, and the draft preview's origin and field checks.
 
-Not yet checked: the owner draft preview inside the CMS editor on HTTPS (needs a deployed preview), a phone-width pass, and the production domain. Do these on a Preview deployment before switching the live store's feed on. Rolling back a text edit is a CMS restore; rolling back the code is the usual Vercel rollback.
+- The draft preview handshake was checked with a stand-in editor page: the store announced itself, accepted a draft with the one-time code, confirmed it, showed the draft text, and a real click on the intro reported `tryon-sub` with the same code.
+
+Not yet checked: the draft preview inside the real CMS editor on HTTPS, and the production domain. A Preview deployment sits behind Vercel sign-in, so the editor cannot frame it; test the editor on the production domain once the code is merged with the switches off. Do these on a Preview deployment before switching the live store's feed on. Rolling back a text edit is a CMS restore; rolling back the code is the usual Vercel rollback.
